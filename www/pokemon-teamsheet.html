@@ -24,6 +24,7 @@ header h1{margin:0;font-size:22px;letter-spacing:.3px}
 .teambtn.on{background:var(--accent2);border-color:var(--accent2);color:#1b1500;box-shadow:0 0 12px rgba(255,203,71,.35)}
 .gensel{width:auto;font-weight:700;padding:7px 28px 7px 10px;border-radius:9px;cursor:pointer;border-color:var(--accent)}
 header h1 span{color:var(--accent)}
+a.btn{text-decoration:none;display:inline-block}
 .btn{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:7px 12px;cursor:pointer;font:inherit}
 .btn:hover{border-color:var(--accent)}
 .btn:disabled{opacity:.4;cursor:not-allowed}.btn:disabled:hover{border-color:var(--line)}
@@ -93,6 +94,7 @@ footer{max-width:1320px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
 <body>
 <header>
   <div class="brand">
+    <a class="btn" href="index.html" title="Inicio" aria-label="Inicio">⌂</a>
     <h1>Pokemon <span>TeamSheet</span></h1>
     <select id="gen" class="gensel" title=""></select>
     <div class="teams" id="teams" role="group"></div>

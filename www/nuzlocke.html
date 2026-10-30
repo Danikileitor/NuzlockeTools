@@ -36,14 +36,23 @@
 .st-dead .sprite img{filter:grayscale(1) brightness(.7)}
 .sprite .ph{color:var(--muted);font-size:28px}
 .info{flex:1;min-width:0}
-.loc{font-weight:700;font-size:15px;margin:0 28px 2px 0}
+.loc{font-weight:700;font-size:15px;margin:0 92px 2px 0}
+.ctl{position:absolute;top:8px;right:10px;display:flex;gap:2px;align-items:center}
+.ctl button,.grip{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:6px;line-height:1;font-family:inherit}
+.ctl button:hover,.grip:hover{color:var(--accent2);background:var(--panel2)}
+.ctl button:disabled{opacity:.25;cursor:not-allowed}.ctl button:disabled:hover{color:var(--muted);background:none}
+.grip{cursor:grab;font-size:16px;user-select:none}
+.grip.off{opacity:.25;cursor:not-allowed}
+.slot.dragging{opacity:.35}
+.slot[class*=mk-]::before{content:"";position:absolute;background:var(--accent2);border-radius:2px;box-shadow:0 0 10px rgba(255,203,71,.6);pointer-events:none}
+.mk-l::before{left:-9px;top:0;bottom:0;width:4px}.mk-r::before{right:-9px;top:0;bottom:0;width:4px}
+.mk-t::before{top:-9px;left:0;right:0;height:4px}.mk-b::before{bottom:-9px;left:0;right:0;height:4px}
 .loc .tag{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;border-radius:5px;padding:1px 6px;background:var(--panel2);border:1px solid var(--line);color:var(--accent2);margin-left:6px;vertical-align:middle}
 .sub{color:var(--muted);font-size:12px;margin-bottom:8px}
 .sub.warn{color:var(--warn)}
 .fields{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
 .fields .full{grid-column:1/-1}
-.x{position:absolute;top:8px;right:10px;background:none;border:0;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 4px}
-.x:hover{color:var(--accent)}
+.ctl .x:hover{color:var(--accent)}
 .picks{display:flex;flex-wrap:wrap;gap:4px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line)}
 .pick{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:0;width:44px;height:44px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .pick:hover{border-color:var(--accent2)}
@@ -95,6 +104,7 @@ const I18N = {
        noRes:'Sin resultados', more:'…escribe para filtrar', custom:'Personal', dlc:'DLC', del:'Eliminar punto',
        nodata:'Este juego aún no tiene datos de zonas. Añade tus propios puntos de captura (Ruta 1, Bosque…) y elige cualquier Pokémon del juego.',
        none:'No hay zonas con este filtro.', pokemonN:n=>`${n} Pokémon`,
+       resetOrder:'Restablecer orden', up:'Subir', down:'Bajar', grip:'Arrastra para reordenar', gripOff:'Quita filtros y búsqueda para reordenar',
        foot:'Zonas y encuentros de PokeAPI · Sprites de PokeAPI/sprites · Los datos pueden no ser exactos al 100%: usa Randomlocke o puntos personales para regalos, legendarios y eventos. Se guarda automáticamente en tu navegador.'},
   en: {back:'← Games', pickGame:'Choose your playthrough game', gen:'Generation', zones:'areas', noZones:'No area data',
        rnd:'Randomlocke', rndOn:'Randomlocke on: you can pick any Pokémon that exists in this game', rndOff:'Randomlocke: pick any Pokémon in the game, not just the area\'s',
@@ -106,6 +116,7 @@ const I18N = {
        noRes:'No results', more:'…type to filter', custom:'Custom', dlc:'DLC', del:'Remove point',
        nodata:'This game has no area data yet. Add your own capture points (Route 1, Forest…) and pick any Pokémon from the game.',
        none:'No areas match this filter.', pokemonN:n=>`${n} Pokémon`,
+       resetOrder:'Reset order', up:'Move up', down:'Move down', grip:'Drag to reorder', gripOff:'Clear filters and search to reorder',
        foot:'Areas and encounters from PokeAPI · Sprites from PokeAPI/sprites · Data may not be 100% exact: use Randomlocke or custom points for gifts, legendaries and events. Saved automatically in your browser.'}
 };
 const MN = {
@@ -224,6 +235,21 @@ function combo(loc, G, rec, onPick) {
 }
 
 /* ---------- Tarjeta de zona ---------- */
+let dragKey = null;
+const clearMarks = () => document.querySelectorAll('.slot[class*=mk-]').forEach(c => c.classList.remove('mk-l', 'mk-r', 'mk-t', 'mk-b'));
+function dropSide(card, e) {
+  const r = card.getBoundingClientRect(), board = card.parentElement;
+  const twoCols = r.width < board.clientWidth * 0.7;
+  const before = twoCols ? e.clientX < r.left + r.width / 2 : e.clientY < r.top + r.height / 2;
+  return {before, cls: twoCols ? (before ? 'mk-l' : 'mk-r') : (before ? 'mk-t' : 'mk-b')};
+}
+function moveLoc(G, k, delta) {
+  const keys = allLocs(G).map(l => String(l.k)), i = keys.indexOf(String(k)), j = i + delta;
+  if (i < 0 || j < 0 || j >= keys.length) return;
+  [keys[i], keys[j]] = [keys[j], keys[i]]; G.order = keys; save(); renderBoard();
+  const c = document.querySelector(`.slot[data-k="${CSS.escape(String(k))}"]`); if (c) c.scrollIntoView({block:'nearest'});
+}
+document.addEventListener('mouseup', () => document.querySelectorAll('.slot[draggable=true]').forEach(c => { if (dragKey == null) c.draggable = false; }));
 const blank = () => ({p:'', n:'', s:''});
 function upd(G, k, patch) {
   const r = Object.assign(blank(), G.c[k], patch);
@@ -256,9 +282,40 @@ function buildCard(loc, G) {
         el('div', {class:'full'}, el('label', {text:t('pokemon')}), cb),
         el('div', {}, el('label', {text:t('nick')}), nick),
         el('div', {}, el('label', {text:t('status')}), stSel)))));
-  if (loc.custom) card.append(el('button', {class:'x', title:t('del'), text:'✕', onclick:() => {
-    G.custom = G.custom.filter(c => c.k !== loc.k); delete G.c[loc.k]; save(); renderBoard(); renderSummary();
+  // controles de orden: subir / bajar / arrastrar (+ eliminar si es personal)
+  card.dataset.k = loc.k;
+  const canOrder = !view.q && view.filter === 'all';
+  const ctl = el('div', {class:'ctl'},
+    el('button', {type:'button', title:t('up'), text:'▲', ...(canOrder ? {} : {disabled:''}), onclick:() => moveLoc(G, loc.k, -1)}),
+    el('button', {type:'button', title:t('down'), text:'▼', ...(canOrder ? {} : {disabled:''}), onclick:() => moveLoc(G, loc.k, 1)}),
+    el('span', {class:'grip' + (canOrder ? '' : ' off'), title:t(canOrder ? 'grip' : 'gripOff'), text:'⠿'}));
+  if (loc.custom) ctl.append(el('button', {class:'x', type:'button', title:t('del'), text:'✕', onclick:() => {
+    G.custom = G.custom.filter(c => c.k !== loc.k); delete G.c[loc.k]; if (G.order) G.order = G.order.filter(k => String(k) !== String(loc.k)); save(); renderBoard(); renderSummary();
   }}));
+  card.append(ctl);
+  if (canOrder) {
+    ctl.querySelector('.grip').addEventListener('mousedown', () => { card.draggable = true; });
+    card.addEventListener('dragstart', e => {
+      if (!card.draggable) { e.preventDefault(); return; }
+      dragKey = String(loc.k); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', dragKey);
+      setTimeout(() => card.classList.add('dragging'), 0);
+    });
+    card.addEventListener('dragend', () => { dragKey = null; card.draggable = false; card.classList.remove('dragging'); clearMarks(); });
+    card.addEventListener('dragover', e => {
+      if (dragKey == null || dragKey === String(loc.k)) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      clearMarks(); card.classList.add(dropSide(card, e).cls);
+    });
+    card.addEventListener('drop', e => {
+      if (dragKey == null || dragKey === String(loc.k)) return;
+      e.preventDefault();
+      const before = dropSide(card, e).before; clearMarks();
+      const keys = allLocs(G).map(l => String(l.k)).filter(k => k !== dragKey);
+      const i = keys.indexOf(String(loc.k)) + (before ? 0 : 1);
+      keys.splice(i, 0, dragKey); dragKey = null;
+      G.order = keys; save(); renderBoard();
+    });
+  }
   // atajos con los Pokémon de la zona
   if (!rec.p && !any) {
     const picks = el('div', {class:'picks'});
@@ -272,7 +329,12 @@ function buildCard(loc, G) {
 }
 
 /* ---------- Vista de juego ---------- */
-const allLocs = G => [...GM[view.gid].loc, ...G.custom.map(c => ({k:c.k, n:c.n, e:[], custom:true}))];
+const allLocs = G => {
+  const list = [...GM[view.gid].loc, ...G.custom.map(c => ({k:c.k, n:c.n, e:[], custom:true}))];
+  if (!G.order) return list;
+  const pos = new Map(G.order.map((k, i) => [String(k), i]));
+  return list.map((l, i) => [l, pos.has(String(l.k)) ? pos.get(String(l.k)) : 1e6 + i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
+};
 function renderSummary() {
   const box = $('sum'); if (!box) return;
   const G = gstate(view.gid), locs = allLocs(G);
@@ -312,7 +374,8 @@ function renderGame() {
     G.custom.push({k:'c' + Date.now(), n}); save(); addIn.value = ''; renderBoard(); renderSummary();
   };
   addIn.addEventListener('keydown', e => { if (e.key === 'Enter') doAdd(); });
-  app.append(el('div', {class:'tools'}, filt, search, el('div', {class:'add'}, addIn, el('button', {class:'btn', type:'button', text:t('add'), onclick:doAdd}))));
+  const rst = el('button', {class:'btn', type:'button', text:t('resetOrder'), ...(G.order ? {} : {disabled:''}), onclick:() => { G.order = null; save(); renderGame(); }});
+  app.append(el('div', {class:'tools'}, filt, search, rst, el('div', {class:'add'}, addIn, el('button', {class:'btn', type:'button', text:t('add'), onclick:doAdd}))));
   app.append(el('div', {class:'board', id:'board'}));
   renderSummary(); renderBoard();
 }
