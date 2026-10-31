@@ -3,19 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#12141c">
 <title>Pokémon Manager</title>
-<link rel="stylesheet" href="shared.css">
-<style>
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;margin-top:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px;display:flex;flex-direction:column;gap:10px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s,box-shadow .15s}
-.card::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--c,var(--accent))}
-.card:hover{transform:translateY(-3px);border-color:var(--c,var(--accent));box-shadow:0 10px 28px rgba(0,0,0,.4)}
-.card .ico{width:54px;height:54px;border-radius:12px;background:var(--panel2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:28px}
-.card h2{margin:0;font-size:18px}
-.card p{margin:0;color:var(--muted)}
-.card .go{margin-top:auto;font-weight:700;color:var(--c,var(--accent))}
-.lead{color:var(--muted);margin:4px 0 0}
-</style>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 <header>
@@ -36,17 +33,6 @@
   </div>
 </main>
 <footer><span id="foot"></span></footer>
-<script>
-const I={
- es:{lead:'Herramientas para gestionar tus partidas de Pokémon.',t1:'Capturas Nuzlocke',d1:'Elige un juego y apunta el Pokémon capturado en cada zona. Incluye modo Randomlocke.',t2:'Equipo rival',d2:'Apunta los Pokémon, habilidades, movimientos y stats del equipo de tus rivales.',go:'Abrir →',foot:'Los datos se guardan en tu navegador.'},
- en:{lead:'Tools to manage your Pokémon playthroughs.',t1:'Nuzlocke captures',d1:'Pick a game and log the Pokémon caught in each area. Randomlocke mode included.',t2:'Rival team',d2:'Log your rivals\' Pokémon, abilities, moves and stats.',go:'Open →',foot:'Data is saved in your browser.'}};
-let lang='es';
-try{lang=JSON.parse(localStorage.getItem('pm-lang'))||'es'}catch(e){}
-const $=id=>document.getElementById(id);
-function paint(){const t=I[lang];document.documentElement.lang=lang;$('lang').value=lang;
- ['lead','t1','d1','t2','d2','foot'].forEach(k=>$(k).textContent=t[k]);$('g1').textContent=$('g2').textContent=t.go;}
-$('lang').onchange=e=>{lang=e.target.value;try{localStorage.setItem('pm-lang',JSON.stringify(lang))}catch(_){}paint()};
-paint();
-</script>
+<script src="js/index.js"></script>
 </body>
 </html>
