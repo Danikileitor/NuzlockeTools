@@ -16,7 +16,7 @@ const I18N = {
        possible:n => `${n} posibles aquí`, anyHere:'Cualquier Pokémon del juego', dup:'⚠ Repetido: ya lo tienes en otra zona', lvl:'Nv',
        noRes:'Sin resultados', more:'…escribe para filtrar', custom:'Personal', dlc:'DLC', del:'Eliminar punto',
        nodata:'Este juego aún no tiene datos de zonas. Añade tus propios puntos de captura (Ruta 1, Bosque…) y elige cualquier Pokémon del juego.',
-       none:'No hay zonas con este filtro.', pokemonN:n=>`${n} Pokémon`,
+       none:'No hay zonas con este filtro.',
        partial:'Datos de Paldea incompletos: en las zonas más grandes faltan algunos hábitats (roca, ruinas, nieve…). Si no encuentras un Pokémon en la zona, usa Randomlocke. Los DLC (Kitakami y Arándano) no están incluidos.',
        resetOrder:'Restablecer orden', up:'Subir', down:'Bajar', grip:'Arrastra para reordenar', gripOff:'Quita filtros y búsqueda para reordenar',
        foot:'Zonas y encuentros de PokeAPI · Sprites de PokeAPI/sprites · Los datos pueden no ser exactos al 100%: usa Randomlocke o puntos personales para regalos, legendarios y eventos. Se guarda automáticamente en tu navegador.'},
@@ -29,7 +29,7 @@ const I18N = {
        possible:n => `${n} possible here`, anyHere:'Any Pokémon in the game', dup:'⚠ Duplicate: already owned from another area', lvl:'Lv',
        noRes:'No results', more:'…type to filter', custom:'Custom', dlc:'DLC', del:'Remove point',
        nodata:'This game has no area data yet. Add your own capture points (Route 1, Forest…) and pick any Pokémon from the game.',
-       none:'No areas match this filter.', pokemonN:n=>`${n} Pokémon`,
+       none:'No areas match this filter.',
        partial:'Paldea data is incomplete: the biggest areas miss some habitats (rocky, ruins, snow…). If a Pokémon is missing from an area, use Randomlocke. DLC (Kitakami and Blueberry) is not included.',
        resetOrder:'Reset order', up:'Move up', down:'Move down', grip:'Drag to reorder', gripOff:'Clear filters and search to reorder',
        foot:'Areas and encounters from PokeAPI · Sprites from PokeAPI/sprites · Data may not be 100% exact: use Randomlocke or custom points for gifts, legendaries and events. Saved automatically in your browser.'}
@@ -55,6 +55,8 @@ const t = k => I18N[lang][k];
 const pn = pid => P[pid][lang === 'es' ? 0 : 1];
 const ln = l => l[lang === 'es' ? 'es' : 'en'];
 const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+const NORM = {};   // pid -> nombres normalizados (es + en), evita recalcular en cada tecla
+const normName = p => NORM[p] || (NORM[p] = norm(P[p][0] + ' ' + P[p][1]));
 const spriteUrl = pid => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pid}.png`;
 const el = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -65,8 +67,8 @@ const el = (tag, attrs = {}, ...kids) => {
   kids.forEach(k => e.append(k));
   return e;
 };
-const img = (pid, cls) => {
-  const i = el('img', {src: spriteUrl(pid), alt: '', loading: 'lazy'});
+const img = pid => {
+  const i = el('img', {src: spriteUrl(pid), alt: '', loading: 'lazy', decoding: 'async'});
   i.onerror = () => i.style.visibility = 'hidden';
   return i;
 };
@@ -116,7 +118,7 @@ function combo(loc, G, rec, onPick) {
     let out;
     if (any) out = game.dex.map(p => ({p, s:''}));
     else out = loc.e.map(e => ({p:e[0], s:`${[...new Set(e[1].map(mname))].join('/')} · ${t('lvl')} ${!e[2] ? '?' : e[2] === e[3] ? e[2] : e[2] + '–' + e[3]}`}));
-    return out.filter(o => !q || norm(P[o.p][0]).includes(q) || norm(P[o.p][1]).includes(q));
+    return q ? out.filter(o => normName(o.p).includes(q)) : out;
   };
   const draw = () => {
     list = options(); act = Math.min(act, Math.max(list.length - 1, 0));
@@ -284,7 +286,7 @@ function renderGame() {
   [['all','all'], ['pending','pending'], ['caught','caught'], ['failed','failed'], ['dead','dead']].forEach(([v, k]) =>
     filt.append(el('button', {class:'teambtn' + (view.filter === v ? ' on' : ''), type:'button', text:t(k), onclick:() => { view.filter = v; renderGame(); }})));
   const search = el('input', {class:'search', type:'search', placeholder:t('search'), value:view.q});
-  search.oninput = () => { view.q = search.value; renderBoard(); };
+  let timer; search.oninput = () => { clearTimeout(timer); timer = setTimeout(() => { view.q = search.value; renderBoard(); }, 120); };
   const addIn = el('input', {type:'text', placeholder:t('addPh'), maxlength:'40'});
   const doAdd = () => {
     const n = addIn.value.trim(); if (!n) return;

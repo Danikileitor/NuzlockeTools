@@ -1,26 +1,31 @@
 {
-  "name": "Pokémon Manager",
-  "short_name": "Pokémon",
-  "description": "Herramientas para gestionar tus partidas de Pokémon: capturas Nuzlocke y equipo rival.",
+  "id": "./",
+  "name": "Nuzlocke Tools",
+  "short_name": "Nuzlocke",
+  "description": "Herramientas para tus partidas de Pokémon: capturas Nuzlocke y equipo rival (TeamSheet).",
   "lang": "es",
-  "start_url": "index.html",
+  "dir": "ltr",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "orientation": "any",
   "theme_color": "#12141c",
   "background_color": "#12141c",
+  "categories": [
+    "games",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

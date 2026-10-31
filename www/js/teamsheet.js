@@ -76,6 +76,15 @@ let state = [];
 const save = () => { const gd = normGen(prefs.gen); gd.a = team; gd.t[team] = state; try { localStorage.setItem(KEY2, JSON.stringify(all)); } catch(e) {} };
 
 /* ---------- Combobox ---------- */
+// Miniatura para las listas de resultados (sprite de dex, con respaldo al sprite gen5)
+function thumb(id) {
+  const urls = [spriteUrls(id)[1], spriteUrls(id)[2]];
+  const img = el('img', {class:'thumb', alt:'', loading:'lazy', decoding:'async', src:urls[0]});
+  let n = 0;
+  img.onerror = () => { if (++n < urls.length) img.src = urls[n]; else img.style.visibility = 'hidden'; };
+  return img;
+}
+
 function combobox(input, getOpts, onPick) {
   // getOpts() -> [{v: valor, l: etiqueta, s: texto secundario}]
   const dd = el('div', {class:'dd'});
@@ -98,7 +107,10 @@ function combobox(input, getOpts, onPick) {
     dd.replaceChildren();
     if (!list.length) dd.append(el('div', {class:'empty', text:t('noRes')}));
     list.forEach((o,i) => {
-      const d = el('div', {}, el('span', {text:o.l}), o.s ? el('small', {text:o.s}) : '');
+      const label = el('span', {class:'opt'});
+      if (o.i) label.append(thumb(o.i));
+      label.append(el('span', {text:o.l}));
+      const d = el('div', {}, label, o.s ? el('small', {text:o.s}) : '');
       d.addEventListener('mousedown', ev => { ev.preventDefault(); pick(o); });
       if (i === act) d.classList.add('act');
       dd.append(d);
@@ -156,7 +168,7 @@ function setGen(g) {
   SP = Object.fromEntries(species.map(s => [s.n, s]));
   MV = Object.assign({}, UNION, Object.fromEntries(moves.map(m => [m[0], m])));   // la gen actual manda sobre el resto
   ALLM = Object.values(MV).sort((a, b) => a[0].localeCompare(b[0]));
-  speciesOpts = species.map(s => ({v:s.n, l:s.n, s:'#' + s.num}));
+  speciesOpts = species.map(s => ({v:s.n, l:s.n, s:'#' + s.num, i:s.i}));
   allAbilities = [...new Set(species.flatMap(s => s.a))].sort();
   const gd = normGen(g); team = gd.a; state = clean(gd.t[team]);
   const bitsCache = {}, SPI = Object.fromEntries(species.map((s, i) => [s.n, i]));

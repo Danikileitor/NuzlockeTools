@@ -35,3 +35,5 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 main{max-width:1320px;margin:0 auto;padding:8px 16px 40px}
 footer{max-width:1320px;margin:0 auto;padding:0 16px 30px;color:var(--muted);font-size:12px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .type{font-size:11px;font-weight:700;color:#fff;border-radius:5px;padding:2px 8px;text-transform:uppercase;letter-spacing:.4px}
+
+[hidden]{display:none !important}

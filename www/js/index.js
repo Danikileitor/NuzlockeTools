@@ -1,6 +1,6 @@
 const I={
- es:{lead:'Herramientas para gestionar tus partidas de Pokémon.',t1:'Capturas Nuzlocke',d1:'Elige un juego y apunta el Pokémon capturado en cada zona. Incluye modo Randomlocke.',t2:'Equipo rival',d2:'Apunta los Pokémon, habilidades, movimientos y stats del equipo de tus rivales.',go:'Abrir →',foot:'Los datos se guardan en tu navegador.'},
- en:{lead:'Tools to manage your Pokémon playthroughs.',t1:'Nuzlocke captures',d1:'Pick a game and log the Pokémon caught in each area. Randomlocke mode included.',t2:'Rival team',d2:'Log your rivals\' Pokémon, abilities, moves and stats.',go:'Open →',foot:'Data is saved in your browser.'}};
+ es:{lead:'Herramientas para gestionar tus partidas de Pokémon.',t1:'Nuzlocke',d1:'Elige un juego y apunta el Pokémon capturado en cada zona. Incluye modo Randomlocke.',t2:'TeamSheet',d2:'Apunta los Pokémon, habilidades, movimientos y stats del equipo de tus rivales.',go:'Abrir →',foot:'Los datos se guardan en tu navegador.'},
+ en:{lead:'Tools to manage your Pokémon playthroughs.',t1:'Nuzlocke',d1:'Pick a game and log the Pokémon caught in each area. Randomlocke mode included.',t2:'TeamSheet',d2:'Log your rivals\' Pokémon, abilities, moves and stats.',go:'Open →',foot:'Data is saved in your browser.'}};
 let lang='es';
 try{lang=JSON.parse(localStorage.getItem('pm-lang'))||'es'}catch(e){}
 const $=id=>document.getElementById(id);
