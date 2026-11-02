@@ -256,12 +256,39 @@ function createStage() {
       try {
         const g = await loadGltf(url), wrap = new THREE.Group();
         wrap.add(g.scene);
-        let box = new THREE.Box3().setFromObject(wrap), size = box.getSize(new THREE.Vector3());
+        // caja real con la pose animada (la de reposo del esqueleto), no la pose base del esqueleto
+        const clips = (g.animations || []).filter(c => !/eye|mouth|blink/i.test(c.name));
+        let mixer = null, acts = null;
+        if (clips.length) {
+          mixer = new THREE.AnimationMixer(g.scene);
+          const find = re => clips.find(c => re.test(c.name)), act = c => c && mixer.clipAction(c);
+          const idle = find(/defaultwait01_loop|aidle|wait.*loop|idle/i) || clips[0];
+          acts = {idle:act(idle), hover:act(find(/glad|happy|jump_s|fight_b|attack01|attack/i)), win:act(find(/glad|happy|jump_e|roar|attack01|attack|fight_d/i))};
+          acts.idle.play(); mixer.update(0);
+        }
+        const measure = () => {
+          wrap.updateMatrixWorld(true);
+          const b = new THREE.Box3(), v = new THREE.Vector3();
+          wrap.traverse(o => {
+            if (!o.isMesh) return;
+            if (o.isSkinnedMesh && (o.boneTransform || o.applyBoneTransform)) {
+              o.skeleton.update();
+              const pos = o.geometry.attributes.position;
+              for (let k = 0; k < pos.count; k++) {
+                v.fromBufferAttribute(pos, k); (o.applyBoneTransform || o.boneTransform).call(o, k, v); b.expandByPoint(v.applyMatrix4(o.matrixWorld));
+              }
+            } else b.expandByObject(o);
+          });
+          return b;
+        };
+        let box = measure(), size = box.getSize(new THREE.Vector3());
         g.scene.scale.multiplyScalar(2.6 / Math.max(size.y, 0.75 * Math.max(size.x, size.z), 0.001));
-        box = new THREE.Box3().setFromObject(wrap);
+        wrap.updateMatrixWorld(true); box = measure();
         g.scene.position.sub(box.getCenter(new THREE.Vector3()));
         wrap.userData.half = box.getSize(new THREE.Vector3()).y / 2;   // para apoyarlo justo sobre la Poké Ball
-        return {obj:wrap};
+        // la esfera de recorte de un modelo con esqueleto usa la pose base (muy distinta): sin esto partes como los ojos desaparecen
+        wrap.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+        return {obj:wrap, mixer, acts};
       } catch (e) { /* sin modelo: usa la ilustración */ }
     }
     return {tex: await loadTex(pid)};
@@ -271,6 +298,7 @@ function createStage() {
 
   function clearMon(s) {
     if (s.mon) {
+      s.mixer?.stopAllAction(); s.mixer?.uncacheRoot(s.mon); s.mixer = s.acts = null;
       s.group.remove(s.mon);
       s.mon.traverse(o => {
         o.geometry?.dispose();
@@ -298,6 +326,7 @@ function createStage() {
         m.userData.billboard = true; m.renderOrder = 5;
       }
       m.scale.setScalar(0.01); m.position.y = BALL_Y; s.mon = m; s.spin = Math.random() * 6; s.group.add(m);
+      s.mixer = loaded[i].mixer || null; s.acts = loaded[i].acts || null; s.cur = 'idle';
       s.delay = 0.35 + i * 0.45; s.pending = true;
     });
     state = 'revealing';
@@ -387,7 +416,23 @@ function createStage() {
       if (s.mon) {
         const e = ease(Math.max(0, Math.min(1, s.prog)));
         s.mon.position.set(s.mx / Math.max(0.001, s.gs), BALL_Y + e * (0.35 + (s.mon.userData.half || 1.35)) + s.up * 1.0 + Math.sin(t * 2.2 + i) * 0.09 * e + s.hov * 0.15, 0.2);
-        s.mon.scale.setScalar(Math.max(0.01, e * s.big * (1 + s.hov * 0.12)));
+        const sc = Math.max(0.01, e * s.big * (1 + s.hov * 0.12));
+        if (s.mixer || s.mon.userData.billboard) s.mon.scale.setScalar(sc);
+        else {   // sin animación propia (p. ej. Mew): respiración, balanceo y saltitos al pasar el ratón / elegirlo
+          const act = (hoverIdx === i && state === 'reveal') || (state === 'chosen' && chosen === i), br = Math.sin(t * 3 + i * 2) * 0.035;
+          s.mon.scale.set(sc * (1 - br * 0.6), sc * (1 + br), sc * (1 - br * 0.6));
+          s.mon.rotation.z = Math.sin(t * 1.7 + i) * 0.05;
+          if (act) s.mon.position.y += Math.abs(Math.sin(t * 6)) * 0.28 * e;
+        }
+        if (s.mixer) {
+          const want = state === 'chosen' && chosen === i ? 'win' : (hoverIdx === i && state === 'reveal') ? 'hover' : 'idle';
+          if (want !== s.cur) {
+            const next = s.acts[want] || s.acts.idle, prev = s.acts[s.cur] || s.acts.idle;
+            if (next !== prev) { next.reset().fadeIn(0.25).play(); prev.fadeOut(0.25); }
+            s.cur = want;
+          }
+          s.mixer.update(dt * (e > 0.05 ? 1 : 0));
+        }
         if (s.mon.userData.billboard) s.mon.quaternion.copy(camera.quaternion);
         else { s.spin += dt * (hoverIdx === i ? 0.3 : 0.8); s.mon.rotation.y = s.spin; }
         s.shadow.scale.setScalar(0.5 + e * 0.8 * s.big); s.shadow.material.opacity = 0.35 + e * 0.5;
@@ -421,7 +466,7 @@ function createStage() {
   frame();
   idle();
   return {reveal, choose, idle, relabel, set onRevealed(f) { onRevealed = f; }, set onIdleClick(f) { onIdleClick = f; },
-          get state() { return state; }, kinds: () => slots.map(s => !s.mon ? 'none' : s.mon.userData.billboard ? 'flat' : '3d'), pidAt: i => slots[i].pid, resize};
+          get state() { return state; }, anims: () => slots.map(s => s.mixer ? {t:+s.mixer.time.toFixed(2), cur:s.cur, n:Object.values(s.acts).filter(Boolean).length} : null), kinds: () => slots.map(s => !s.mon ? 'none' : s.mon.userData.billboard ? 'flat' : '3d'), pidAt: i => slots[i].pid, resize};
 }
 
 /* ---------- Flujo ---------- */
