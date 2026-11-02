@@ -17,20 +17,20 @@ const I18N = {
        generate:'Generar', again:'Generar de nuevo', pick:n => `Pokémon ${n}`, searchPh:'Buscar Pokémon…', noRes:'Sin resultados',
        hintCustom:'Elige los 3 Pokémon que aparecerán.', hintRandom:'Los 3 Pokémon serán completamente aleatorios.', hintEvo2:'Los 3 serán Pokémon básicos que evolucionan 2 veces en este juego.',
        missing:'Elige los 3 Pokémon para poder generar.', dupes:'Elige 3 Pokémon distintos.', tooFew:'No hay suficientes Pokémon que cumplan este parámetro en este juego.',
-       clickBall:'Pulsa Generar (o una Poké Ball) para ver tus 3 opciones.', choose:'Elige a tu Pokémon inicial',
+       clickBall:'Pulsa Generar (o una Poké Ball) para ver tus 3 opciones.', choose:'Elige a tu Pokémon inicial · arrastra para girar la escena', loading:'Cargando modelos 3D…',
        confirm:n => `¿Quieres elegir a ${n}?`, yes:'Sí', no:'No', chosen:n => `¡Tu Pokémon inicial es ${n}!`,
        save:'Guardar en el Nuzlocke', saved:'Guardado como Pokémon inicial en el Nuzlocke de este juego.', open:'Abrir Nuzlocke',
        nogl:'Tu navegador no puede mostrar gráficos 3D (WebGL). Prueba con otro navegador o activa la aceleración por hardware.',
-       foot:'Gráficos 3D con Three.js · Ilustraciones de PokeAPI/sprites · Lista de Pokémon y evoluciones de PokeAPI.'},
+       foot:'Gráficos 3D con Three.js · Modelos 3D de Pokemon-3D-api (proyecto de fans sin ánimo de lucro; los modelos son propiedad de Nintendo, Creatures Inc. y GAME FREAK inc.) · Datos de PokeAPI.'},
   en: {game:'Game', mode:'Parameters', custom:'Custom', random:'Random', evo2:'Random basic Pokémon with 2 evolutions',
        generate:'Generate', again:'Generate again', pick:n => `Pokémon ${n}`, searchPh:'Search Pokémon…', noRes:'No results',
        hintCustom:'Choose the 3 Pokémon that will appear.', hintRandom:'The 3 Pokémon will be completely random.', hintEvo2:'All 3 will be basic Pokémon that evolve twice in this game.',
        missing:'Choose all 3 Pokémon to generate.', dupes:'Choose 3 different Pokémon.', tooFew:'Not enough Pokémon match this parameter in this game.',
-       clickBall:'Press Generate (or a Poké Ball) to see your 3 options.', choose:'Choose your starter Pokémon',
+       clickBall:'Press Generate (or a Poké Ball) to see your 3 options.', choose:'Choose your starter Pokémon · drag to rotate the scene', loading:'Loading 3D models…',
        confirm:n => `Do you want to choose ${n}?`, yes:'Yes', no:'No', chosen:n => `Your starter Pokémon is ${n}!`,
        save:'Save to Nuzlocke', saved:'Saved as the starter Pokémon in this game\'s Nuzlocke.', open:'Open Nuzlocke',
        nogl:'Your browser cannot display 3D graphics (WebGL). Try another browser or enable hardware acceleration.',
-       foot:'3D graphics with Three.js · Artwork from PokeAPI/sprites · Pokémon and evolution data from PokeAPI.'}
+       foot:'3D graphics with Three.js · 3D models from Pokemon-3D-api (non-commercial fan project; models are property of Nintendo, Creatures Inc. and GAME FREAK inc.) · Data from PokeAPI.'}
 };
 let lang = 'es';
 try { lang = JSON.parse(localStorage.getItem('pm-lang')) || 'es'; } catch (e) {}
@@ -39,12 +39,17 @@ const pn = p => P[p][lang === 'es' ? 0 : 1];
 const gname = g => 'Pokémon ' + (lang === 'es' ? g.es : g.en);
 
 /* ---------- Preferencias ---------- */
-const PK = 'starter-prefs-v1';
-const prefs = {game:'red', mode:'random', custom:['', '', '']};
+const PK = 'starter-prefs-v2';
+const prefs = {game:'red', mode:'evo2', custom:['', '', '']};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PK) || '{}')); } catch (e) {}
 if (!GM[prefs.game]) prefs.game = 'red';
 const savePrefs = () => { try { localStorage.setItem(PK, JSON.stringify(prefs)); } catch (e) {} };
 
+// Modelos 3D (GLB con Draco): https://github.com/Pokemon-3D-api/assets  (por número de Pokédex)
+const MODEL_BASE = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/';
+const NO_3D = new Set([850,851,852,853,854,859,860,861,863,864,866,868,873,878,879,882,883,918,919,931,935,936,938,939,940,944,950,951,952,953,954,955,956,961,963,964,968,969,970,971,972,976,977,986,988,989,991,992,993,1011,1012,1013,1022,1024]);
+const GENDER = new Set([521, 668, 916]);   // solo existen como -M / -F
+const modelUrl = p => (p >= 10000 || NO_3D.has(p)) ? null : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
 const art = p => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${p}.png`;
 const front = p => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${p}.png`;
 
@@ -81,19 +86,28 @@ function combo(idx) {
     act = Math.min(act, Math.max(list.length - 1, 0));
     dd.replaceChildren();
     if (!list.length) { dd.append(el('div', {class:'empty', text:t('noRes')})); return; }
-    list.slice(0, 120).forEach((p, i) => {
+    list.slice(0, 400).forEach((p, i) => {
       const img = el('img', {src:front(p), alt:'', loading:'lazy'}); img.onerror = () => { img.style.visibility = 'hidden'; };
-      const row = el('div', {class: i === act ? 'act' : ''}, el('span', {}, img, el('span', {text:pn(p)})), el('small', {text:'#' + (p < 10000 ? p : '')}));
-      row.addEventListener('mousedown', e => { e.preventDefault(); choose(p); });
+      const isSel = p === prefs.custom[idx];
+      const row = el('div', {class: (i === act ? 'act' : '') + (isSel ? ' sel' : '')}, el('span', {}, img, el('span', {text:(isSel ? '✓ ' : '') + pn(p)})), el('small', {text:'#' + (p < 10000 ? p : '')}));
+      const pick = e => { e.preventDefault(); choose(p); };
+      row.addEventListener('mousedown', e => e.preventDefault());   // evita que el input pierda el foco antes de elegir
+      row.addEventListener('pointerdown', pick);
+      row.addEventListener('click', pick);
       dd.append(row);
     });
   };
-  const open = () => { dd.classList.add('open'); draw(); };
+  const open = () => { clearTimeout(closeT); dd.classList.add('open'); draw(); };
+  let closeT;
   const close = () => dd.classList.remove('open');
-  const choose = p => { prefs.custom[idx] = p; savePrefs(); close(); input.blur(); show(); updateHint(); };
-  input.addEventListener('focus', () => { input.dataset.q = ''; input.select(); act = 0; open(); });
+  const choose = p => { prefs.custom[idx] = p; savePrefs(); clearTimeout(closeT); close(); show(); updateHint(); input.blur(); };
+  input.addEventListener('focus', () => {
+    input.dataset.q = ''; input.select();
+    act = Math.max(0, game().dex.indexOf(prefs.custom[idx]));   // empieza en el Pokémon ya elegido
+    open(); dd.querySelector('.sel')?.scrollIntoView({block:'center'});
+  });
   input.addEventListener('input', () => { input.dataset.q = input.value; act = 0; open(); });
-  input.addEventListener('blur', () => { close(); if (!input.value.trim() && prefs.custom[idx]) { prefs.custom[idx] = ''; savePrefs(); updateHint(); } show(); });
+  input.addEventListener('blur', () => { closeT = setTimeout(close, 150); if (!input.value.trim() && prefs.custom[idx]) { prefs.custom[idx] = ''; savePrefs(); updateHint(); } show(); });
   input.addEventListener('keydown', e => {
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); act = Math.max(0, Math.min(list.length - 1, act + (e.key === 'ArrowDown' ? 1 : -1))); draw(); dd.querySelector('.act')?.scrollIntoView({block:'nearest'}); }
     else if (e.key === 'Enter') { e.preventDefault(); if (list[act] != null) choose(list[act]); }
@@ -140,9 +154,16 @@ function createStage() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 100);
   const loader = new THREE.TextureLoader(); loader.setCrossOrigin('anonymous');
+  const draco = new THREE.DRACOLoader();
+  draco.setDecoderPath(location.protocol === 'file:' ? 'https://www.gstatic.com/draco/versioned/decoders/1.5.5/' : 'js/vendor/draco/');
+  const gltfLoader = new THREE.GLTFLoader(); gltfLoader.setDRACOLoader(draco); gltfLoader.setCrossOrigin('anonymous');
+  // rotación con ratón / dedo (sin zoom ni desplazamiento)
+  const controls = new THREE.OrbitControls(camera, cv);
+  Object.assign(controls, {enableZoom:false, enablePan:false, enableDamping:true, dampingFactor:0.08, rotateSpeed:0.8, minPolarAngle:0.55, maxPolarAngle:1.5});
+  controls.target.set(0, 1.5, 0);
 
   // luces y escenario
-  scene.add(new THREE.AmbientLight(0xffffff, 0.75));
+  scene.add(new THREE.AmbientLight(0xffffff, 0.95));
   const key = new THREE.DirectionalLight(0xffffff, 0.9); key.position.set(3, 8, 6); scene.add(key);
   const rim = new THREE.DirectionalLight(0x8a7bff, 0.6); rim.position.set(-6, 4, -4); scene.add(rim);
   const floor = new THREE.Mesh(new THREE.CircleGeometry(9, 64), new THREE.MeshStandardMaterial({color:0x12141f, roughness:.8, metalness:.15}));
@@ -227,11 +248,36 @@ function createStage() {
     });
   }
 
+  const loadGltf = url => new Promise((res, rej) => gltfLoader.load(url, res, undefined, rej));
+  // devuelve {obj} (modelo 3D centrado, de 2.6 de alto máx.) o {tex} (ilustración plana de respaldo)
+  async function loadMon(pid) {
+    const url = modelUrl(pid);
+    if (url) {
+      try {
+        const g = await loadGltf(url), wrap = new THREE.Group();
+        wrap.add(g.scene);
+        let box = new THREE.Box3().setFromObject(wrap), size = box.getSize(new THREE.Vector3());
+        g.scene.scale.multiplyScalar(2.6 / Math.max(size.y, 0.75 * Math.max(size.x, size.z), 0.001));
+        box = new THREE.Box3().setFromObject(wrap);
+        g.scene.position.sub(box.getCenter(new THREE.Vector3()));
+        wrap.userData.half = box.getSize(new THREE.Vector3()).y / 2;   // para apoyarlo justo sobre la Poké Ball
+        return {obj:wrap};
+      } catch (e) { /* sin modelo: usa la ilustración */ }
+    }
+    return {tex: await loadTex(pid)};
+  }
   let state = 'idle', hoverIdx = -1, token = 0, onPick = null, onIdleClick = null, chosen = -1;
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(-9, -9);
 
   function clearMon(s) {
-    if (s.mon) { s.group.remove(s.mon); s.mon.material.map?.dispose(); s.mon.material.dispose(); s.mon.geometry.dispose(); s.mon = null; }
+    if (s.mon) {
+      s.group.remove(s.mon);
+      s.mon.traverse(o => {
+        o.geometry?.dispose();
+        for (const m of [].concat(o.material || [])) { for (const k in m) if (m[k] && m[k].isTexture) m[k].dispose(); m.dispose(); }
+      });
+      s.mon = null;
+    }
   }
   function resetSlots() {
     slots.forEach(s => { clearMon(s); Object.assign(s, {lidT:0, progT:0, prog:0, mx:0, mxT:0, gs:1, gsT:1, bigT:1, big:1, up:0, upT:0, burst:0, pid:0, pending:null}); s.group.scale.setScalar(1); delete lblEls[s.i].dataset.pid; });
@@ -240,15 +286,22 @@ function createStage() {
   async function reveal(pids, pickCb) {
     const my = ++token; state = 'loading'; onPick = pickCb;
     resetSlots(); lblEls.forEach(l => l.classList.add('off'));
-    const texs = await Promise.all(pids.map(loadTex));
-    if (my !== token) return;
+    resetView();
+    const loaded = await Promise.all(pids.map(loadMon));
+    if (my !== token) return false;
     slots.forEach((s, i) => {
       s.pid = pids[i];
-      const mat = new THREE.MeshBasicMaterial({map:texs[i], transparent:true, depthWrite:false, side:THREE.DoubleSide});
-      const m = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 2.7), mat); m.scale.setScalar(0.01); m.position.y = BALL_Y; m.renderOrder = 5; s.mon = m; s.group.add(m);
+      let m;
+      if (loaded[i].obj) m = loaded[i].obj;
+      else {
+        m = new THREE.Mesh(new THREE.PlaneGeometry(2.7, 2.7), new THREE.MeshBasicMaterial({map:loaded[i].tex, transparent:true, depthWrite:false, side:THREE.DoubleSide}));
+        m.userData.billboard = true; m.renderOrder = 5;
+      }
+      m.scale.setScalar(0.01); m.position.y = BALL_Y; s.mon = m; s.spin = Math.random() * 6; s.group.add(m);
       s.delay = 0.35 + i * 0.45; s.pending = true;
     });
     state = 'revealing';
+    return true;
   }
   function choose(i) {
     chosen = i; state = 'chosen';
@@ -269,13 +322,18 @@ function createStage() {
   }
 
   // tamaño y cámara adaptables
+  const home = new THREE.Vector3(); let placed = false;
   function resize() {
     const w = cv.clientWidth || 800, h = cv.clientHeight || 450;
     renderer.setSize(w, h, false); camera.aspect = w / h;
     const halfW = 5.6, fov = THREE.MathUtils.degToRad(camera.fov);
     const dist = Math.max(10, halfW / (Math.tan(fov / 2) * camera.aspect));
-    camera.position.set(0, 3.1 + dist * 0.12, dist); camera.lookAt(0, 1.5, 0); camera.updateProjectionMatrix();
+    home.set(0, 3.1 + dist * 0.12, dist);
+    if (!placed) { camera.position.copy(home); placed = true; }
+    else camera.position.sub(controls.target).setLength(home.clone().sub(controls.target).length()).add(controls.target);
+    camera.updateProjectionMatrix(); controls.update();
   }
+  function resetView() { camera.position.copy(home); controls.update(); }
   new ResizeObserver(resize).observe(cv); resize();
 
   function setPointer(e) {
@@ -288,7 +346,12 @@ function createStage() {
   }
   cv.addEventListener('pointermove', e => { setPointer(e); const i = pickSlot(); hoverIdx = i; cv.classList.toggle('hot', i >= 0 && state !== 'loading' && state !== 'chosen'); });
   cv.addEventListener('pointerleave', () => { hoverIdx = -1; mouse.set(-9, -9); cv.classList.remove('hot'); });
-  cv.addEventListener('pointerdown', e => {
+  let down = null;
+  cv.addEventListener('pointerdown', e => { down = {x:e.clientX, y:e.clientY}; });
+  cv.addEventListener('pointerup', e => {
+    if (!down) return;
+    const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y); down = null;
+    if (moved > 6) return;   // fue un arrastre (rotación), no un clic
     setPointer(e); const i = pickSlot(); if (i < 0) return;
     if (state === 'idle') onIdleClick && onIdleClick();
     else if (state === 'reveal' && onPick) onPick(i);
@@ -308,6 +371,7 @@ function createStage() {
       s.lidV += (s.lidT - s.lidV) * k;
       s.lid.rotation.x = -s.lidV;
       const open = Math.min(1, s.lidV / 1.25);
+      s.lid.scale.setScalar(Math.max(0.001, 1 - Math.max(0, open - 0.4) / 0.6));   // la tapa se encoge al abrirse para no tapar al Pokémon
       s.glow.material.opacity = open * 0.55 + (s.burst > 0 ? 0.3 : 0);
       s.burst = Math.max(0, s.burst - dt * 2.2);
       s.light.intensity = s.burst * 1.4 + open * 0.6;
@@ -322,9 +386,10 @@ function createStage() {
       s.ball.position.y = BALL_Y + (idleWob ? Math.sin(t * 1.6 + i * 1.3) * 0.05 : 0) + s.hov * 0.04;
       if (s.mon) {
         const e = ease(Math.max(0, Math.min(1, s.prog)));
-        s.mon.position.set(s.mx / Math.max(0.001, s.gs), BALL_Y + e * 1.55 + s.up * 1.0 + Math.sin(t * 2.2 + i) * 0.09 * e + s.hov * 0.15, 0.2);
+        s.mon.position.set(s.mx / Math.max(0.001, s.gs), BALL_Y + e * (0.35 + (s.mon.userData.half || 1.35)) + s.up * 1.0 + Math.sin(t * 2.2 + i) * 0.09 * e + s.hov * 0.15, 0.2);
         s.mon.scale.setScalar(Math.max(0.01, e * s.big * (1 + s.hov * 0.12)));
-        s.mon.quaternion.copy(camera.quaternion);
+        if (s.mon.userData.billboard) s.mon.quaternion.copy(camera.quaternion);
+        else { s.spin += dt * (hoverIdx === i ? 0.3 : 0.8); s.mon.rotation.y = s.spin; }
         s.shadow.scale.setScalar(0.5 + e * 0.8 * s.big); s.shadow.material.opacity = 0.35 + e * 0.5;
       }
       s.shadow.visible = !!s.mon;
@@ -349,13 +414,14 @@ function createStage() {
     }
     pgeo.attributes.position.needsUpdate = true;
     ringFloor.rotation.z = t * 0.1;
+    controls.update();
     renderer.render(scene, camera);
   }
   let onRevealed = null;
   frame();
   idle();
   return {reveal, choose, idle, relabel, set onRevealed(f) { onRevealed = f; }, set onIdleClick(f) { onIdleClick = f; },
-          get state() { return state; }, pidAt: i => slots[i].pid, resize};
+          get state() { return state; }, kinds: () => slots.map(s => !s.mon ? 'none' : s.mon.userData.billboard ? 'flat' : '3d'), pidAt: i => slots[i].pid, resize};
 }
 
 /* ---------- Flujo ---------- */
@@ -374,15 +440,15 @@ function generate() {
     if (pool.length < 3) return warn(t('tooFew'));
     pids = sample(pool, 3);
   }
-  updateHint(); hideAll(); current = pids;
-  $('hint').textContent = t('choose');
+  updateHint(); hideAll(); current = pids; selected = -1;
+  $('hint').textContent = t('loading');
   stage.reveal(pids, i => {
     selected = i; $('dlgText').textContent = t('confirm')(pn(pids[i])); $('dialog').hidden = false;
-  });
+  }).then(ok => { if (ok) $('hint').textContent = t('choose'); });
 }
 function bind() {
   $('gen').onclick = generate;
-  $('game').onchange = e => { prefs.game = e.target.value; savePrefs(); renderParams(); if (stage) { hideAll(); stage.idle(); } };
+  $('game').onchange = e => { prefs.game = e.target.value; prefs.custom = prefs.custom.map(p => game().dex.includes(p) ? p : ''); savePrefs(); renderParams(); if (stage) { hideAll(); stage.idle(); } };
   $('lang').onchange = e => { lang = e.target.value; try { localStorage.setItem('pm-lang', JSON.stringify(lang)); } catch (_) {} renderParams(); };
   $('dlgNo').onclick = () => { $('dialog').hidden = true; selected = -1; };
   $('dlgYes').onclick = () => {
