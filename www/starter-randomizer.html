@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="48x48" href="favicon-48x48.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta name="theme-color" content="#12141c">
+<title>Starter Randomizer</title>
+<link rel="stylesheet" href="css/shared.css">
+<link rel="stylesheet" href="css/starter.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <a class="btn" id="home" href="index.html" title="Inicio" aria-label="Inicio">⌂</a>
+    <h1>Starter <span>Randomizer</span></h1>
+  </div>
+  <select id="lang" class="lang"><option value="es">Castellano</option><option value="en">English</option></select>
+</header>
+<main>
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label id="lblGame" for="game"></label><select id="game"></select></div>
+      <div class="field grow"><label id="lblMode"></label><div class="modes" id="modes" role="group"></div></div>
+    </div>
+    <div class="custom" id="custom" hidden></div>
+    <div class="actions">
+      <button class="btn go" id="gen" type="button"></button>
+      <span class="hint" id="hint"></span>
+    </div>
+  </section>
+
+  <section class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="labels" id="labels"></div>
+    <div class="dialog" id="dialog" hidden>
+      <p id="dlgText"></p>
+      <div><button class="btn go" id="dlgYes" type="button"></button> <button class="btn" id="dlgNo" type="button"></button></div>
+    </div>
+    <div class="result" id="result" hidden>
+      <h2 id="resTitle"></h2>
+      <div class="resbtns">
+        <button class="btn go" id="resSave" type="button"></button>
+        <a class="btn" id="resOpen" href="nuzlocke.html"></a>
+        <button class="btn" id="resAgain" type="button"></button>
+      </div>
+      <p class="hint" id="resMsg"></p>
+    </div>
+    <div class="nogl" id="nogl" hidden></div>
+  </section>
+</main>
+<footer><span id="foot"></span></footer>
+<script src="js/vendor/three.min.js"></script>
+<script src="js/nuzlocke-data.js"></script>
+<script src="js/starter-data.js"></script>
+<script src="js/starter.js"></script>
+</body>
+</html>
