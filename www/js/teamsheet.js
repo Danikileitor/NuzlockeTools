@@ -15,6 +15,7 @@ const KEY2 = 'pokemon-teamsheet-v2';
 const PREF = 'rival-team-gen9-prefs';
 let prefs = {lang:'es', random:false, gen:9};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch(e) {}
+prefs.random = PMRandom.get();   // Randomlocke compartido entre páginas
 const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
 // k: 'a' habilidad, 'm' movimiento, 'i' objeto
 const NAT_ES = {Adamant:'Firme',Bashful:'Tímida',Bold:'Osada',Brave:'Audaz',Calm:'Serena',Careful:'Cauta',Docile:'Dócil',Gentle:'Amable',Hardy:'Fuerte',Hasty:'Activa',Impish:'Agitada',Jolly:'Alegre',Lax:'Floja',Lonely:'Huraña',Mild:'Afable',Modest:'Modesta',Naive:'Ingenua',Naughty:'Pícara',Quiet:'Mansa',Quirky:'Rara',Rash:'Alocada',Relaxed:'Plácida',Sassy:'Grosera',Serious:'Seria',Timid:'Miedosa'};
@@ -380,7 +381,8 @@ const syncPrefs = () => {
 };
 genSel.onchange = () => { save(); setGen(+genSel.value); savePrefs(); syncPrefs(); refresh(); };
 langSel.onchange = () => { prefs.lang = langSel.value; savePrefs(); syncPrefs(); refresh(); };
-rndBtn.onclick = () => { prefs.random = !prefs.random; savePrefs(); syncPrefs(); refresh(); };
+rndBtn.onclick = () => { prefs.random = !prefs.random; PMRandom.set(prefs.random); savePrefs(); syncPrefs(); refresh(); };
+PMRandom.onChange(v => { prefs.random = v; syncPrefs(); refresh(); });
 syncPrefs();
 updatePaste();
 refresh();

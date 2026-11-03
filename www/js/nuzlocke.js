@@ -113,7 +113,7 @@ function combo(loc, G, rec, onPick) {
   let list = [], act = 0;
   input.value = rec.p ? pn(rec.p) : '';
   const options = () => {
-    const any = G.random || !loc.e.length;
+    const any = PMRandom.get() || !loc.e.length;
     const q = norm(input.dataset.q || '');
     let out;
     if (any) out = game.dex.map(p => ({p, s:''}));
@@ -181,7 +181,7 @@ function buildCard(loc, G) {
   const redo = () => { const n = buildCard(loc, G); card.replaceWith(n); };
   const sprite = el('div', {class:'sprite'});
   if (rec.p) sprite.append(img(rec.p)); else sprite.append(el('span', {class:'ph', text:'?'}));
-  const any = G.random || !loc.e.length;
+  const any = PMRandom.get() || !loc.e.length;
   const dup = rec.p && Object.entries(G.c).some(([k, r]) => String(k) !== String(loc.k) && r.p === rec.p && r.s !== 'failed');
   const sub = dup ? t('dup') : any ? t('anyHere') : t('possible')(new Set(loc.e.map(e => e[0])).size);
   const title = el('div', {class:'loc', text: loc.custom ? loc.n : ln(loc)});
@@ -308,7 +308,7 @@ function paintChrome() {
   $('back').hidden = $('rnd').hidden = $('reset').hidden = $('gname').hidden = !inGame;
   if (inGame) {
     $('gname').textContent = 'Pokémon ' + (lang === 'es' ? g.es : g.en); $('gname').style.setProperty('--c', g.col);
-    const on = gstate(view.gid).random;
+    const on = PMRandom.get();
     $('rnd').classList.toggle('on', on); $('rnd').setAttribute('aria-pressed', on); $('rnd').title = on ? t('rndOn') : t('rndOff');
     $('rnd').textContent = t('rnd');
   }
@@ -323,7 +323,8 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 $('lang').onchange = e => { lang = e.target.value; try { localStorage.setItem(LANG, JSON.stringify(lang)); } catch(_) {} paintChrome(); view.gid ? renderGame() : renderGames(); };
-$('rnd').onclick = () => { const G = gstate(view.gid); G.random = !G.random; save(); paintChrome(); renderBoard(); };
+$('rnd').onclick = () => { PMRandom.set(!PMRandom.get()); paintChrome(); renderBoard(); };
+PMRandom.onChange(() => { if (view.gid) { paintChrome(); renderBoard(); } });
 $('reset').onclick = () => { if (confirm(t('confirmReset'))) { delete db[view.gid]; save(); paintChrome(); renderGame(); } };
 route();
 })();

@@ -25,6 +25,7 @@ try {
   const o = JSON.parse(localStorage.getItem(LS) || 'null');
   if (o) { S.gen = o.gen || 9; S.random = !!o.random; S.weather = o.weather || ''; if (o.sides) S.sides = o.sides.map(x => Object.assign(blankSide(), x, {mv:[0,1,2,3].map(j => Object.assign(blankMove(), (x.mv || [])[j]))})); }
 } catch (e) {}
+S.random = PMRandom.get();   // Randomlocke compartido entre páginas
 const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} };
 
 /* ---------- Traducciones ---------- */
@@ -124,7 +125,7 @@ function combobox(input, getOpts, onPick) {
     dd.classList.add('open');
   };
   const close = () => dd.classList.remove('open');
-  const pick = o => { close(); onPick(o.v); input.blur(); };
+  const pick = o => { close(); input.value = o.l; onPick(o.v); input.blur(); };   // el valor del campo debe ser el elegido: el blur lo vuelve a leer
   const mark = () => { [...dd.children].forEach((c, i) => c.classList.toggle('act', i === act)); dd.children[act]?.scrollIntoView({block:'nearest'}); };
   input.addEventListener('focus', () => { input.dataset.fresh = '1'; input.select(); render(); });
   input.addEventListener('input', () => { input.dataset.fresh = '0'; render(); });
@@ -467,7 +468,8 @@ function paintHeader() {
   // línea de velocidad entre ambos (debajo del campo)
   gs.onchange = () => { setGen(+gs.value); refreshAll(); paintHeader(); };
   $('weather').onchange = () => { S.weather = $('weather').value; save(); refresh(); };
-  $('rnd').onclick = () => { S.random = !S.random; sanitize(); save(); refreshAll(); paintHeader(); };
+  $('rnd').onclick = () => { S.random = !S.random; PMRandom.set(S.random); sanitize(); save(); refreshAll(); paintHeader(); };
+  PMRandom.onChange(v => { S.random = v; sanitize(); save(); refreshAll(); paintHeader(); });
   $('swap').onclick = () => { S.sides.reverse(); save(); refreshAll(); };
   $('lang').onchange = e => { lang = e.target.value; try { localStorage.setItem(LANG, JSON.stringify(lang)); } catch (_) {} fillWeather(); $('foot').textContent = t('foot')(S.gen, G.species.length, G.moves.length); refreshAll(); paintHeader(); };
   setGen(S.gen); fillWeather(); refreshAll(); paintHeader();
