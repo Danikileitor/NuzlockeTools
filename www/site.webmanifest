@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Nuzlocke Tools",
   "short_name": "Nuzlocke",
-  "description": "Herramientas para tus partidas de Pokémon: capturas Nuzlocke y equipo rival (TeamSheet).",
+  "description": "Herramientas para organizar y disfrutar tus partidas de Pokémon.",
   "lang": "es",
   "dir": "ltr",
   "start_url": "./index.html",
