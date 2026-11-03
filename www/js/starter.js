@@ -254,41 +254,7 @@ function createStage() {
     const url = modelUrl(pid);
     if (url) {
       try {
-        const g = await loadGltf(url), wrap = new THREE.Group();
-        wrap.add(g.scene);
-        // caja real con la pose animada (la de reposo del esqueleto), no la pose base del esqueleto
-        const clips = (g.animations || []).filter(c => !/eye|mouth|blink/i.test(c.name));
-        let mixer = null, acts = null;
-        if (clips.length) {
-          mixer = new THREE.AnimationMixer(g.scene);
-          const find = re => clips.find(c => re.test(c.name)), act = c => c && mixer.clipAction(c);
-          const idle = find(/defaultwait01_loop|aidle|wait.*loop|idle/i) || clips[0];
-          acts = {idle:act(idle), hover:act(find(/glad|happy|jump_s|fight_b|attack01|attack/i)), win:act(find(/glad|happy|jump_e|roar|attack01|attack|fight_d/i))};
-          acts.idle.play(); mixer.update(0);
-        }
-        const measure = () => {
-          wrap.updateMatrixWorld(true);
-          const b = new THREE.Box3(), v = new THREE.Vector3();
-          wrap.traverse(o => {
-            if (!o.isMesh) return;
-            if (o.isSkinnedMesh && (o.boneTransform || o.applyBoneTransform)) {
-              o.skeleton.update();
-              const pos = o.geometry.attributes.position;
-              for (let k = 0; k < pos.count; k++) {
-                v.fromBufferAttribute(pos, k); (o.applyBoneTransform || o.boneTransform).call(o, k, v); b.expandByPoint(v.applyMatrix4(o.matrixWorld));
-              }
-            } else b.expandByObject(o);
-          });
-          return b;
-        };
-        let box = measure(), size = box.getSize(new THREE.Vector3());
-        g.scene.scale.multiplyScalar(2.6 / Math.max(size.y, 0.75 * Math.max(size.x, size.z), 0.001));
-        wrap.updateMatrixWorld(true); box = measure();
-        g.scene.position.sub(box.getCenter(new THREE.Vector3()));
-        wrap.userData.half = box.getSize(new THREE.Vector3()).y / 2;   // para apoyarlo justo sobre la Poké Ball
-        // la esfera de recorte de un modelo con esqueleto usa la pose base (muy distinta): sin esto partes como los ojos desaparecen
-        wrap.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
-        return {obj:wrap, mixer, acts};
+        return PokeModel.prep(await loadGltf(url), pid);
       } catch (e) { /* sin modelo: usa la ilustración */ }
     }
     return {tex: await loadTex(pid)};
