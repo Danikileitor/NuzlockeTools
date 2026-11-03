@@ -82,6 +82,7 @@ const CalcEngine = (() => {
   const RESIST_BERRY = {'Occa Berry':'Fire','Passho Berry':'Water','Wacan Berry':'Electric','Rindo Berry':'Grass','Yache Berry':'Ice','Chople Berry':'Fighting','Kebia Berry':'Poison','Shuca Berry':'Ground','Coba Berry':'Flying','Payapa Berry':'Psychic','Tanga Berry':'Bug','Charti Berry':'Rock','Kasib Berry':'Ghost','Haban Berry':'Dragon','Colbur Berry':'Dark','Babiri Berry':'Steel','Roseli Berry':'Fairy'};
   // habilidades que anulan un tipo (y a veces curan); [tipo]
   const IMMUNE_AB = {Levitate:'Ground','Volt Absorb':'Electric','Lightning Rod':'Electric','Motor Drive':'Electric','Water Absorb':'Water','Storm Drain':'Water','Dry Skin':'Water','Flash Fire':'Fire','Sap Sipper':'Grass','Earth Eater':'Ground','Well-Baked Body':'Fire','Wind Rider':null};
+  const E_stage = (gen, n) => stageMul(gen, Math.max(-6, Math.min(6, n || 0)));
   const MOLD = new Set(['Mold Breaker','Teravolt','Turboblaze']);
   const PUNCH = /Punch|Plasma Fists|Meteor Mash|Sky Uppercut|Comet Punch|Dynamic Punch|Mach Punch/i, BITE = /Bite|Fang|Crunch|Jaw Lock/i, PULSE = /Pulse|Aura Sphere/i;
   const SLICE = new Set(['Slash','Cut','Night Slash','Leaf Blade','Psycho Cut','X-Scissor','Air Slash','Aerial Ace','Sacred Sword','Razor Shell','Cross Poison','Fury Cutter','Solar Blade','Stone Axe','Ceaseless Edge','Kowtow Cleave','Secret Sword','Behemoth Blade','Population Bomb','Tachyon Cutter','Psyblade','Air Cutter','Razor Leaf','Mighty Cleave','Bitter Blade','Aqua Cutter','Smart Strike']);
@@ -106,8 +107,12 @@ const CalcEngine = (() => {
     const abA = gen >= 3 ? (a.ab || '') : '', abD = gen >= 3 ? (d.ab || '') : '';
     const abDef = MOLD.has(abA) ? '' : abD;                 // Mold Breaker ignora la habilidad rival
     const itA = gen >= 2 ? (a.item || '') : '', itD = gen >= 2 ? (d.item || '') : '';
+    if (mv.n === 'Tera Blast' && a.tera) {
+      type = a.tera;
+      cat = (a.stats[1] * E_stage(gen, a.stages[0])) > (a.stats[3] * E_stage(gen, a.stages[2])) ? 'P' : 'S';
+    }
     if (cat === 'T') return null;
-    const dTypes = d.sp.t.slice();
+    const dTypes = d.tera ? [d.tera] : d.sp.t.slice();
 
     // tipo del movimiento (habilidades que lo cambian)
     let abTypeBoost = 1;
@@ -143,6 +148,8 @@ const CalcEngine = (() => {
     // Solar Beam / Blade sin sol
     if ((mv.n === 'Solar Beam' || mv.n === 'Solar Blade') && gen >= 3 && ['Rain','Sand','Hail','Snow','Heavy Rain'].includes(f.weather)) bp = Math.floor(bp / 2);
 
+    // Teracristalización: los movimientos del teratipo de menos de 60 de poder suben a 60
+    if (gen >= 9 && a.tera && type === a.tera && bp < 60 && hits === 1 && !mv.noTeraBoost) bp = 60;
     // estadísticas de ataque y defensa
     const phys = cat === 'P';
     let atkI = phys ? 1 : 3, defI = phys ? 2 : 4;
@@ -185,10 +192,10 @@ const CalcEngine = (() => {
         if (abA === 'Toxic Boost' && phys && /psn|tox/.test(a.status || '')) atM = chain(atM, M(1.5));
         if (abA === 'Flare Boost' && !phys && a.status === 'brn') atM = chain(atM, M(1.5));
         if (abA === 'Analytic') bpM = chain(bpM, M(1.3));
-        if (abA === 'Rivalry') bpM = chain(bpM, M(1.25));
         if (abA === 'Sheer Force') bpM = chain(bpM, M(1.3));
         if (abA === 'Supreme Overlord') bpM = chain(bpM, M(1.1));
       }
+      if (abA === 'Rivalry' && a.gender && d.gender) bpM = chain(bpM, M(a.gender === d.gender ? 1.25 : 0.75));
       if (abA === 'Technician' && bp <= 60) bpM = chain(bpM, M(1.5));
       if (abA === 'Iron Fist' && PUNCH.test(mv.n)) bpM = chain(bpM, M(1.2));
       if (abA === 'Strong Jaw' && BITE.test(mv.n)) bpM = chain(bpM, M(1.5));
@@ -253,6 +260,15 @@ const CalcEngine = (() => {
       if (RESIST_BERRY[itD] === type && (eff > 1 || type === 'Normal') && gen >= 4) finM = chain(finM, M(.5));
       if (itD === 'Chilan Berry' && type === 'Normal' && gen >= 4) finM = chain(finM, M(.5));
     }
+    // terrenos (Gen 6+)
+    if (gen >= 6 && f.terrain) {
+      const grounded = (m, ab, it, types) => !types.includes('Flying') && ab !== 'Levitate' && it !== 'Air Balloon';
+      const gA = grounded(a, abA, itA, a.tera ? [a.tera] : a.sp.t), gD = grounded(d, abD, itD, dTypes);
+      const tb = gen >= 8 ? 1.3 : 1.5;
+      if (gA && ((f.terrain === 'Electric' && type === 'Electric') || (f.terrain === 'Grassy' && type === 'Grass') || (f.terrain === 'Psychic' && type === 'Psychic'))) bpM = chain(bpM, M(tb));
+      if (f.terrain === 'Misty' && type === 'Dragon' && gD) bpM = chain(bpM, M(.5));
+      if (f.terrain === 'Grassy' && gD && ['Earthquake', 'Bulldoze', 'Magnitude'].includes(mv.n)) bpM = chain(bpM, M(.5));
+    }
     // clima sobre defensa
     if (f.weather === 'Sand' && gen >= 4 && !phys && dTypes.includes('Rock')) dfM = chain(dfM, M(1.5));
     if (f.weather === 'Snow' && gen >= 9 && phys && dTypes.includes('Ice')) dfM = chain(dfM, M(1.5));
@@ -282,7 +298,8 @@ const CalcEngine = (() => {
     let L = a.lvl;
     if (gen === 1 && crit) L *= 2;
     let base = Math.floor(Math.floor(Math.floor(2 * L / 5 + 2) * bp * A / D) / 50);
-    const stab = a.sp.t.includes(type);
+    const origStab = a.sp.t.includes(type), teraStab = !!a.tera && a.tera === type && gen >= 9;
+    const stab = origStab || teraStab;
     const weather = f.weather;
     const wMod = (() => {
       if (gen < 2) return 1;
@@ -296,7 +313,8 @@ const CalcEngine = (() => {
       if (weather === 'Heavy Rain' && type === 'Fire') return {rolls:[0], eff, notes:['weather'], hits:1};
     }
     const burn = a.status === 'brn' && phys && !(abA === 'Guts' && gen >= 3) && mv.n !== 'Facade' && gen >= 2;
-    const stabMod = !stab ? 1 : gen >= 4 && abA === 'Adaptability' ? 2 : 1.5;
+    const adap = gen >= 4 && abA === 'Adaptability';
+    const stabMod = !stab ? 1 : (teraStab && origStab) ? (adap ? 2.25 : 2) : adap ? 2 : 1.5;
     const stabMod2 = (!stab && abA === 'Protean' && gen >= 6) ? 1.5 : stabMod;
     const critMod = !crit ? 1 : gen <= 5 ? 2 : 1.5;
     const applyEff = dmg => {
@@ -390,6 +408,14 @@ const CalcEngine = (() => {
     return {n: 7, chance: 0};
   }
 
-  return {TYPES, typesIn, typeEff, eff1, calcStats, hpDV, calc, koChance, koSummary, stageMul, TYPE_ITEMS, RESIST_BERRY, MULTI, FIXED};
+  // Potencia de los movimientos Z (Gen 7) y Max (Gen 8, Dynamax)
+  const zPower = bp => bp <= 0 ? 0 : bp <= 55 ? 100 : bp <= 65 ? 120 : bp <= 75 ? 140 : bp <= 85 ? 160 : bp <= 95 ? 175 : bp <= 105 ? 180 : bp <= 115 ? 185 : bp <= 125 ? 190 : bp <= 135 ? 195 : 200;
+  const maxPower = (bp, type) => {
+    if (bp <= 0) return 0;
+    const fp = type === 'Fighting' || type === 'Poison';
+    const i = bp <= 40 ? 0 : bp <= 50 ? 1 : bp <= 60 ? 2 : bp <= 70 ? 3 : bp <= 100 ? 4 : bp <= 140 ? 5 : 6;
+    return (fp ? [70, 75, 80, 85, 90, 95, 100] : [90, 100, 110, 120, 130, 140, 150])[i];
+  };
+  return {zPower, maxPower, TYPES, typesIn, typeEff, eff1, calcStats, hpDV, calc, koChance, koSummary, stageMul, TYPE_ITEMS, RESIST_BERRY, MULTI, FIXED};
 })();
 if (typeof module !== 'undefined') module.exports = CalcEngine;
