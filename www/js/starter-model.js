@@ -36,14 +36,15 @@ const PokeModel = (() => {
   const HIDE = {914:/gel_mesh/};   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
   const TPOSE = new Set([97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
-  function dropArms(scene, deg) {
+  const LAT_X = new Set([612,190,505,539,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
+  function dropArms(scene, deg, pid) {
     scene.updateMatrixWorld(true);
     const meshes = []; scene.traverse(o => { if (o.isMesh && !o.isSkinnedMesh && o.visible) meshes.push(o); });
     if (!meshes.length) return false;
     const v = new THREE.Vector3(), mn = [1e9, 1e9, 1e9], mx = [-1e9, -1e9, -1e9];
     const each = fn => { for (const m of meshes) { const pos = m.geometry.attributes.position; for (let k = 0; k < pos.count; k++) { v.fromBufferAttribute(pos, k).applyMatrix4(m.matrixWorld); fn(v); } } };
     each(p => { for (let i = 0; i < 3; i++) { mn[i] = Math.min(mn[i], p.getComponent(i)); mx[i] = Math.max(mx[i], p.getComponent(i)); } });
-    const LA = (mx[2] - mn[2]) > (mx[0] - mn[0]) ? 2 : 0;            // eje lateral = el de los brazos (suele ser X)
+    const LA = !LAT_X.has(pid) && (mx[2] - mn[2]) > (mx[0] - mn[0]) ? 2 : 0;            // eje lateral = el de los brazos (suele ser X)
     const cx = (mn[LA] + mx[LA]) / 2, S = (mx[LA] - mn[LA]) / 2, H = mx[1] - mn[1];
     let sy = 0, sn = 0;
     each(p => { if (Math.abs(p.getComponent(LA) - cx) > 0.8 * S) { sy += p.y; sn++; } });   // altura de las manos
@@ -123,7 +124,7 @@ const PokeModel = (() => {
       const idle = find(/defaultwait01_loop|aidle|wait.*loop|idle|idol|stand|wait|base layer|armatureaction|^animation$|take 001/i) || clips[0];
       acts = {idle:act(idle), hover:act(find(/glad|happy|jump_s|fight_b|attack01|attack/i)), win:act(find(/glad|happy|jump_e|roar|attack01|attack|fight_d/i))};
       acts.idle.play(); mixer.update(0);
-    } else { arms = lowerArms(g.scene); if (!arms.length && TPOSE.has(pid)) arms = [dropArms(g.scene) ? 'malla' : 'no']; }
+    } else { arms = lowerArms(g.scene); if (!arms.length && TPOSE.has(pid)) arms = [dropArms(g.scene, undefined, pid) ? 'malla' : 'no']; }
     let m = measure(wrap), size = m.rob.getSize(new THREE.Vector3()), fs = m.full.getSize(new THREE.Vector3());
     const raw = fs.toArray().map(x => +x.toFixed(3));
     let k = 2.6 / Math.max(size.y, 0.75 * Math.max(size.x, size.z), 0.001);

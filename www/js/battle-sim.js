@@ -64,7 +64,9 @@ const BattleSim = (() => {
     g.fillStyle = gr; g.fillRect(0, 0, 128, 128); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
   }
   function initThree() {
-    const renderer = new THREE.WebGLRenderer({canvas:ui.cv, antialias:true});
+    // un canvas nuevo en cada apertura: tras forceContextLoss el anterior ya no admite otro contexto WebGL
+    const cv = el('canvas', {class:'simcv'}); ui.cv.replaceWith(cv); ui.cv = cv;
+    const renderer = new THREE.WebGLRenderer({canvas:cv, antialias:true});
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); renderer.outputEncoding = THREE.sRGBEncoding;
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x121827); scene.fog = new THREE.Fog(0x121827, 15, 34);
     const camera = new THREE.PerspectiveCamera(38, 16 / 9, 0.1, 100);
