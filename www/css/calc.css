@@ -100,3 +100,43 @@
 .seg button:hover{color:var(--text)}
 .seg button.on{background:var(--accent,#f5c542);color:#14161e;font-weight:600}
 .seg button:focus-visible{outline:2px solid var(--accent,#f5c542);outline-offset:-2px}
+
+/* ---- Simulador de combate ---- */
+.simbtn{margin-left:auto;font-weight:700;border-color:var(--accent);color:var(--accent)}
+.simbtn:hover{background:var(--accent);color:#14161e}
+body.simopen{overflow:hidden}
+.simback{position:fixed;inset:0;z-index:100;background:rgba(4,6,12,.78);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;padding:16px}
+.simback[hidden]{display:none}
+.simbox{width:min(1040px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius,14px);box-shadow:0 24px 80px rgba(0,0,0,.6);padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.simhead{display:flex;align-items:center;justify-content:space-between}
+.simhead h2{margin:0;font-size:17px;color:var(--accent2)}
+.simx{font-size:15px;line-height:1;padding:6px 10px}
+.simstage{position:relative;aspect-ratio:16/9;min-height:240px;border-radius:12px;overflow:hidden;background:#121827;border:1px solid var(--line)}
+.simcv{position:absolute;inset:0;width:100%;height:100%;display:block}
+.simcard{position:absolute;top:10px;width:min(260px,42%);background:rgba(14,18,32,.82);border:1px solid var(--line);border-left:3px solid var(--c,#8899cc);border-radius:10px;padding:7px 10px;pointer-events:none}
+.simcard.c0{left:10px}.simcard.c1{right:10px}
+.simnm{display:flex;justify-content:space-between;align-items:center;gap:6px;font-size:13px}
+.simst{font-size:10px;font-weight:700;padding:1px 6px;border-radius:6px;background:#444;color:#fff}
+.simst:empty{display:none}.simst.brn{background:#e8622c}.simst.psn,.simst.tox{background:#a350cc}.simst.par{background:#c9a400}.simst.slp{background:#6b7390}.simst.frz{background:#3a9fc9}
+.simbar{height:8px;border-radius:6px;background:#2a3150;margin:6px 0 3px;overflow:hidden}
+.simbar i{display:block;height:100%;width:100%;background:#4cd37b;border-radius:6px}
+.simbar i.mid{background:#f0c23a}.simbar i.low{background:#e5484d}
+.simcard small{color:var(--muted);font-size:11px}
+.simbanner{position:absolute;left:50%;bottom:14px;transform:translate(-50%,8px);opacity:0;transition:opacity .2s,transform .2s;background:rgba(10,13,24,.9);border:2px solid var(--c,#fff);color:#fff;font-weight:800;font-size:clamp(14px,2.4vw,22px);padding:6px 18px;border-radius:999px;pointer-events:none;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
+.simbanner.on{opacity:1;transform:translate(-50%,0)}
+.simload{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(10,13,24,.7);color:var(--text);font-size:14px}
+.simload.on{display:flex}
+.simfloat{position:absolute;transform:translate(-50%,0);font-weight:900;font-size:22px;color:#fff;text-shadow:0 2px 6px #000;pointer-events:none;animation:simfl 1.2s ease-out forwards}
+.simfloat.crit{color:#ffd23f;font-size:28px}.simfloat.se{color:#ff6b6b}.simfloat.nve{color:#7db7ff}.simfloat.miss{color:#c9d0e8;font-size:18px}
+@keyframes simfl{0%{opacity:0;margin-top:10px}15%{opacity:1}100%{opacity:0;margin-top:-56px}}
+.simctr{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.simctr .btn.on{background:var(--accent);color:#14161e}
+.simlbl{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-left:auto;text-transform:none;letter-spacing:0}
+.simspd{width:auto}
+.simturn{font-size:12px;color:var(--muted)}
+.simlog{height:130px;overflow:auto;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:13px}
+.simlog p{margin:2px 0}
+.simlog .turn{color:var(--muted);font-size:11px;text-align:center;margin:8px 0 2px;text-transform:uppercase;letter-spacing:.6px}
+.simlog .crit{color:#ffd23f}.simlog .se{color:#ff8a8a}.simlog .nve,.simlog .imm,.simlog .miss{color:#9db4e6}.simlog .faint{color:#ff6b6b;font-weight:700}.simlog .win{color:#f5c542;font-weight:800}.simlog .dmg{color:var(--text)}.simlog .hint{color:var(--muted)}
+.simhint{margin:0;font-size:11px;color:var(--muted)}
+@media(max-width:620px){.simcard{width:46%;padding:5px 8px}.simnm{font-size:11px}.simlog{height:110px}}

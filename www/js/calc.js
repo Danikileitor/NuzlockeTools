@@ -48,7 +48,7 @@ const I = {
   es: {
     title:'Calculadora de daño', gen:'Generación', rnd:'Randomlocke', rndOn:'Randomlocke activado: puedes elegir cualquier habilidad y cualquier movimiento de la generación', rndOff:'Randomlocke desactivado: solo habilidades y movimientos que el Pokémon puede tener',
     weather:'Clima', w:{'':'Ninguno', Sun:'Sol', Rain:'Lluvia', Sand:'Tormenta de arena', Hail:'Granizo', Snow:'Nieve', 'Harsh Sun':'Sol abrasador', 'Heavy Rain':'Lluvia intensa', 'Strong Winds':'Fuertes vientos'},
-    p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Intercambiar', search:'Buscar Pokémon…', level:'Nivel', nature:'Naturaleza', ability:'Habilidad', abOn:'Habilidad activa', item:'Objeto', noItem:'Sin objeto',
+    p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Intercambiar', sim:'⚔ Simular', search:'Buscar Pokémon…', level:'Nivel', nature:'Naturaleza', ability:'Habilidad', abOn:'Habilidad activa', item:'Objeto', noItem:'Sin objeto',
     status:'Estado', st:{'':'Sano', brn:'Quemado', par:'Paralizado', psn:'Envenenado', tox:'Gravemente envenenado', slp:'Dormido', frz:'Congelado'}, hp:'PS actuales (%)',
     stats:['PS','Ataque','Defensa','At. Esp.','Def. Esp.','Velocidad'], special:'Especial', base:'Base', iv:'IV', dv:'DV', ev:'EV', se:'Exp.', total:'Total', stage:'Niv.',
     moves:'Movimientos', move:'Movimiento…', bp:'Pot.', crit:'Crítico', hits:'Golpes', reflect:'Pantalla de Luz / Reflejo', phys:'Fís.', spec:'Esp.', stat:'Est.',
@@ -66,7 +66,7 @@ const I = {
   en: {
     title:'Damage Calculator', gen:'Generation', rnd:'Randomlocke', rndOn:'Randomlocke on: any ability and any move of the generation can be chosen', rndOff:'Randomlocke off: only abilities and moves the Pokémon can have',
     weather:'Weather', w:{'':'None', Sun:'Sun', Rain:'Rain', Sand:'Sandstorm', Hail:'Hail', Snow:'Snow', 'Harsh Sun':'Harsh Sunlight', 'Heavy Rain':'Heavy Rain', 'Strong Winds':'Strong Winds'},
-    p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Swap', search:'Search Pokémon…', level:'Level', nature:'Nature', ability:'Ability', abOn:'Ability active', item:'Item', noItem:'No item',
+    p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Swap', sim:'⚔ Simulate', search:'Search Pokémon…', level:'Level', nature:'Nature', ability:'Ability', abOn:'Ability active', item:'Item', noItem:'No item',
     status:'Status', st:{'':'Healthy', brn:'Burned', par:'Paralyzed', psn:'Poisoned', tox:'Badly poisoned', slp:'Asleep', frz:'Frozen'}, hp:'Current HP (%)',
     stats:['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed'], special:'Special', base:'Base', iv:'IV', dv:'DV', ev:'EV', se:'Exp.', total:'Total', stage:'Stg.',
     moves:'Moves', move:'Move…', bp:'BP', crit:'Crit', hits:'Hits', reflect:'Light Screen / Reflect', phys:'Phys.', spec:'Spec.', stat:'Stat.',
@@ -526,6 +526,24 @@ function renderOne(o) {
     r.bar.lastChild.style.left = Math.min(100, mn * 100 / curHP) + '%';
   });
 }
+function openSim() {
+  if (S.sides.some(sd => !G.SP[sd.sp])) return;
+  const field = () => Object.assign({weather:S.weather, terrain:S.terrain}, S.fx);
+  const sides = S.sides.map(side => {
+    const sp = G.SP[side.sp], M = monOf(side), maxHP = Math.max(1, M.stats[0] * (M.dmax ? 2 : 1));
+    return {name:sp.n, num:sp.num, sprite:spriteUrls(sp.i)[1], types:(side.teraOn && side.tera && S.gen >= 9 && side.tera !== 'Stellar') ? [side.tera] : sp.t, maxHP, curHP:Math.max(1, Math.round(maxHP * side.hpPct / 100)), speed:speedOf(side), status:side.status,
+      moves:side.mv.map((m, j) => { const d = G.MV[m.n]; return d && d[2] !== 'T' ? {n:m.n, label:tr('m', m.n), type:d[1], cat:d[2], acc:d[4], idx:j} : null; }).filter(Boolean)};
+  });
+  BattleSim.open({lang, gen:S.gen, sides, trickRoom:!!S.fx.trickRoom && S.gen >= 4, typeColors:TYPE_COLORS,
+    calc(att, mi, pc, crit) {
+      const side = S.sides[att], m = side.mv[sides[att].moves[mi].idx], mdata = G.MV[m.n];
+      const A = Object.assign(monOf(side), {hpPct:pc[att]}), D = Object.assign(monOf(S.sides[1 - att]), {hpPct:pc[1 - att]});
+      const mvo = {n:m.n, type:mdata[1], cat:mdata[2], bp:m.bp === '' ? mdata[3] : m.bp, bpUser:m.bp !== '', hits:m.hits || '', crit:crit || m.crit, z:m.z, stellar:m.stellar !== false};
+      let out; try { out = CalcBridge.calc(S.gen, A, D, mvo, field()); } catch (e) { return null; }
+      if (!out) return null;
+      return {rolls:out.rolls, eff:effOf(out, m), type:(out.res.rawDesc && out.res.rawDesc.moveType) || out.move.type, priority:out.move.priority || 0};
+    }});
+}
 function speedOf(side) {
   const st = finalStats(side); if (!st) return null;
   const g = S.gen, ab = hasAb() ? side.ab : '', it = hasItem() ? side.item : '', w = S.weather, on = side.abOn, sx = side.fx || {};
@@ -691,7 +709,7 @@ function paintHeader() {
   document.querySelector('h1').firstChild.textContent = lang === 'es' ? 'Calculadora de ' : 'Damage ';
   document.querySelector('h1 span').textContent = lang === 'es' ? 'daño' : 'Calculator';
   document.title = lang === 'es' ? 'Calculadora de daño' : 'Damage Calculator';
-  $('lblWeather').textContent = t('weather'); $('lblTerrain').textContent = t('terrain'); $('swap').textContent = t('swap');
+  $('lblWeather').textContent = t('weather'); $('lblTerrain').textContent = t('terrain'); $('swap').textContent = t('swap'); $('sim').textContent = t('sim');
   $('rnd').title = S.random ? t('rndOn') : t('rndOff'); $('gensel').title = t('gensel');
   [...$('gensel').options].forEach(o => { o.textContent = 'Gen ' + o.value; });
 }
@@ -709,6 +727,7 @@ function paintHeader() {
   $('terrain').onchange = () => { S.terrain = $('terrain').value; save(); refresh(); };
   $('rnd').onclick = () => { S.random = !S.random; PMRandom.set(S.random); sanitize(); save(); refreshAll(); paintHeader(); };
   PMRandom.onChange(v => { S.random = v; sanitize(); save(); refreshAll(); paintHeader(); });
+  $('sim').onclick = openSim;
   $('swap').onclick = () => { S.sides.reverse(); save(); refreshAll(); };
   $('lang').onchange = e => { lang = e.target.value; try { localStorage.setItem(LANG, JSON.stringify(lang)); } catch (_) {} fillWeather(); $('foot').textContent = t('foot')(S.gen, G.species.length, G.moves.length); refreshAll(); paintHeader(); };
   setGen(S.gen); fillWeather(); refreshAll(); paintHeader();

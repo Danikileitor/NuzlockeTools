@@ -137,5 +137,9 @@ const PokeModel = (() => {
     wrap.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     return {obj:wrap, mixer, acts, info:{clips:clips.length, arms, raw, dims:dims.toArray().map(x => +x.toFixed(2))}};
   }
-  return {prep, measure, TPOSE};
+  const MODEL_BASE = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/';
+  const NO_3D = new Set([850,851,852,853,854,859,860,861,863,864,866,868,873,878,879,882,883,918,919,931,935,936,938,939,940,944,950,951,952,953,954,955,956,961,963,964,968,969,970,971,972,976,977,986,988,989,991,992,993,1011,1012,1013,1022,1024]);
+  const GENDER = new Set([521, 668, 916]);   // solo existen como -M / -F
+  const modelUrl = p => (p >= 10000 || NO_3D.has(p)) ? null : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
+  return {prep, measure, TPOSE, modelUrl};
 })();
