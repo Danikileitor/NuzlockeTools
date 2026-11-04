@@ -18,9 +18,9 @@ const el = (tag, attrs = {}, ...kids) => {
 const LS = 'dmgcalc-v1', LANG = 'pm-lang';
 let lang = 'es';
 try { lang = JSON.parse(localStorage.getItem(LANG)) || 'es'; } catch (e) {}
-const blankMove = () => ({n:'', bp:'', hits:'', crit:false, z:false});
-const blankSide = () => ({sp:'', lvl:50, nat:'', ab:'', abOn:false, item:'', status:'', hpPct:100, gender:'', tera:'', dmax:false, iv:[31,31,31,31,31,31], ev:[0,0,0,0,0,0], stages:[0,0,0,0,0], reflect:false, lscreen:false, fx:{}, mv:[0,1,2,3].map(blankMove)});
-const FX = [["tailwind", 4], ["veil", 7], ["friendGuard", 5], ["helpingHand", 3], ["battery", 7], ["powerSpot", 8], ["steelySpirit", 8], ["charge", 3]], GFX = [["doubles", 3], ["gravity", 4], ["mudSport", 3], ["waterSport", 3], ["fairyAura", 6], ["darkAura", 6], ["auraBreak", 6], ["sword", 9], ["beads", 9], ["tablets", 9], ["vessel", 9]];
+const blankMove = () => ({n:'', bp:'', hits:'', crit:false, z:false, stellar:true});
+const blankSide = () => ({sp:'', lvl:50, nat:'', ab:'', abOn:false, item:'', status:'', hpPct:100, gender:'', tera:'', teraOn:false, dmax:false, iv:[31,31,31,31,31,31], ev:[0,0,0,0,0,0], stages:[0,0,0,0,0], reflect:false, lscreen:false, fx:{}, alliesFainted:0, boostedStat:'', mv:[0,1,2,3].map(blankMove)});
+const FX = [["tailwind", 4], ["veil", 7], ["friendGuard", 5], ["helpingHand", 3], ["battery", 7], ["powerSpot", 8], ["steelySpirit", 8], ["charge", 3], ["flowerGift", 4], ["powerTrick", 4], ["foresight", 2], ["rocks", 2], ["saltCure", 9], ["switching", 2]], GFX = [["doubles", 3], ["gravity", 4], ["magicRoom", 5], ["wonderRoom", 5], ["fairyAura", 6], ["darkAura", 6], ["auraBreak", 6], ["sword", 9], ["beads", 9], ["tablets", 9], ["vessel", 9]];
 const S = {gen:9, random:false, weather:'', terrain:'', fx:{}, sides:[Object.assign(blankSide(), {sp:'Charizard'}), Object.assign(blankSide(), {sp:'Blastoise'})]};
 try {
   const o = JSON.parse(localStorage.getItem(LS) || 'null');
@@ -52,12 +52,12 @@ const I = {
     noDmg:'No hace daño', immune:'Sin efecto', vs:'contra', faster:'es más rápido', tie:'Empate de velocidad', speed:'Velocidad',
     ko1:'OHKO garantizado', koP:(p, n) => `${p}% de probabilidad de ${n === 1 ? 'OHKO' : n + 'HKO'}`, koG:n => `${n}HKO garantizado`, koMore:n => `Necesita ${n}+ golpes`, koPossible:n => `posible ${n}HKO`,
     none:'No existe en esta generación', noRes:'Sin resultados', neutral:'neutra', pickNat:'— Neutra —', reset:'Reiniciar', screens:'Pantallas', refl:'Reflejo', ls:'Pantalla de Luz',
-    foot:(g, n, m) => `Datos de la Gen ${g} de Pokémon Showdown (${n} Pokémon, ${m} movimientos) · Sprites de play.pokemonshowdown.com · Cálculo aproximado: no cubre todas las habilidades, objetos ni movimientos especiales · Se guarda en tu navegador.`,
+    foot:(g, n, m) => `Datos de la Gen ${g} de Pokémon Showdown (${n} Pokémon, ${m} movimientos) · Sprites de play.pokemonshowdown.com · Cálculo con el motor oficial de Smogon (@smogon/calc, licencia MIT) · Se guarda en tu navegador.`,
     gensel:'Generación',
-    gender:'Género', gen_:{'':'—', M:'♂ Macho', F:'♀ Hembra'}, tera:'Teracristal', noTera:'— Sin teracristalizar —', dmax:'Dynamax', zm:'Z', zTip:'Movimiento Z',
+    gender:'Género', gen_:{'':'—', M:'♂ Macho', F:'♀ Hembra'}, tera:'Teracristal', noTera:'— Tipo —', teraOn:'Activo', dmax:'Dynamax', zm:'Z', zTip:'Movimiento Z',
     preset:'Preset', presetPick:'— Elegir preset —', gSmogon:'Sets de Smogon', gGeneric:'Genéricos', gMine:'Mis presets', save:'Guardar', del:'Borrar',
     saveAsk:'Nombre del preset:', delAsk:'¿Borrar este preset?', saveTip:'Guarda la configuración actual de este Pokémon como preset', delTip:'Borra el preset guardado seleccionado',
-    terrain:'Terreno', fxT:'Efectos', gfxT:'Campo', fxn:{tailwind:'Viento Afín', veil:'Velo Aurora', friendGuard:'Compañía (Friend Guard)', helpingHand:'Refuerzo', battery:'Batería', powerSpot:'Fuente de Poder', steelySpirit:'Espíritu Acerado', charge:'Carga'}, gfxn:{doubles:'Dobles', gravity:'Gravedad', mudSport:'Chapoteo Lodo', waterSport:'Hidrochorro', fairyAura:'Aura Feérica', darkAura:'Aura Oscura', auraBreak:'Rompeaura', sword:'Espada Ruina', beads:'Abalorios Ruina', tablets:'Tablilla Ruina', vessel:'Vasija Ruina'}, stellar:'Astral', ter:{'':'Ninguno', Electric:'Eléctrico', Grassy:'Hierba', Misty:'Niebla', Psychic:'Psíquico'}, maxTag:'Movimiento Max', zTag:'Movimiento Z',
+    terrain:'Terreno', fxT:'Efectos', gfxT:'Campo', allies:'Aliados caídos', boosted:'Estat. potenciada (Protosíntesis/Ctrl. Cuántico)', boostedAuto:'Auto', stl1:'1.er uso Astral', fxn:{tailwind:'Viento Afín', veil:'Velo Aurora', friendGuard:'Compañía (Friend Guard)', helpingHand:'Refuerzo', battery:'Batería', powerSpot:'Fuente de Poder', steelySpirit:'Espíritu Acerado', charge:'Carga', flowerGift:'Don Floral', powerTrick:'Truco Fuerza', foresight:'Profecía/Embrujo (Foresight)', rocks:'Trampa Rocas', saltCure:'Salazón', switching:'Cambia (Persecución)'}, gfxn:{doubles:'Dobles', gravity:'Gravedad', magicRoom:'Sala Mágica', wonderRoom:'Sala Extraña', fairyAura:'Aura Feérica', darkAura:'Aura Oscura', auraBreak:'Rompeaura', sword:'Espada Ruina', beads:'Abalorios Ruina', tablets:'Tablilla Ruina', vessel:'Vasija Ruina'}, stellar:'Astral', ter:{'':'Ninguno', Electric:'Eléctrico', Grassy:'Hierba', Misty:'Niebla', Psychic:'Psíquico'}, maxTag:'Movimiento Max', zTag:'Movimiento Z',
     gp:{neutral:'Sin inversión (0 EV, naturaleza neutra)', physFast:'Físico rápido (Alegre, 252 Atq/Vel)', physPow:'Físico potente (Firme, 252 Atq/Vel)', specFast:'Especial rápido (Miedosa, 252 AtE/Vel)', specPow:'Especial potente (Modesta, 252 AtE/Vel)', physWall:'Muro físico (Osada, 252 PS/Def)', specWall:'Muro especial (Serena, 252 PS/DefE)', max:'Máximo (252 EV en Atq/AtE/Vel…)'}
   },
   en: {
@@ -70,12 +70,12 @@ const I = {
     noDmg:'Deals no damage', immune:'No effect', vs:'vs', faster:'is faster', tie:'Speed tie', speed:'Speed',
     ko1:'Guaranteed OHKO', koP:(p, n) => `${p}% chance to ${n === 1 ? 'OHKO' : n + 'HKO'}`, koG:n => `Guaranteed ${n}HKO`, koMore:n => `Needs ${n}+ hits`, koPossible:n => `possible ${n}HKO`,
     none:'Not available in this generation', noRes:'No results', neutral:'neutral', pickNat:'— Neutral —', reset:'Reset', screens:'Screens', refl:'Reflect', ls:'Light Screen',
-    foot:(g, n, m) => `Gen ${g} data from Pokémon Showdown (${n} Pokémon, ${m} moves) · Sprites from play.pokemonshowdown.com · Approximate: not every ability, item or special move is covered · Saved in your browser.`,
+    foot:(g, n, m) => `Gen ${g} data from Pokémon Showdown (${n} Pokémon, ${m} moves) · Sprites from play.pokemonshowdown.com · Calculation by the official Smogon engine (@smogon/calc, MIT license) · Saved in your browser.`,
     gensel:'Generation',
-    gender:'Gender', gen_:{'':'—', M:'♂ Male', F:'♀ Female'}, tera:'Tera Type', noTera:'— Not terastallized —', dmax:'Dynamax', zm:'Z', zTip:'Z-Move',
+    gender:'Gender', gen_:{'':'—', M:'♂ Male', F:'♀ Female'}, tera:'Tera Type', noTera:'— Type —', teraOn:'Active', dmax:'Dynamax', zm:'Z', zTip:'Z-Move',
     preset:'Preset', presetPick:'— Pick preset —', gSmogon:'Smogon sets', gGeneric:'Generic', gMine:'My presets', save:'Save', del:'Delete',
     saveAsk:'Preset name:', delAsk:'Delete this preset?', saveTip:'Save this Pokémon\'s current setup as a preset', delTip:'Delete the selected saved preset',
-    terrain:'Terrain', fxT:'Effects', gfxT:'Field', fxn:{tailwind:'Tailwind', veil:'Aurora Veil', friendGuard:'Friend Guard', helpingHand:'Helping Hand', battery:'Battery', powerSpot:'Power Spot', steelySpirit:'Steely Spirit', charge:'Charge'}, gfxn:{doubles:'Doubles', gravity:'Gravity', mudSport:'Mud Sport', waterSport:'Water Sport', fairyAura:'Fairy Aura', darkAura:'Dark Aura', auraBreak:'Aura Break', sword:'Sword of Ruin', beads:'Beads of Ruin', tablets:'Tablets of Ruin', vessel:'Vessel of Ruin'}, stellar:'Stellar', ter:{'':'None', Electric:'Electric', Grassy:'Grassy', Misty:'Misty', Psychic:'Psychic'}, maxTag:'Max Move', zTag:'Z-Move',
+    terrain:'Terrain', fxT:'Effects', gfxT:'Field', allies:'Fainted allies', boosted:'Boosted stat (Protosynthesis/Quark Drive)', boostedAuto:'Auto', stl1:'First Stellar use', fxn:{tailwind:'Tailwind', veil:'Aurora Veil', friendGuard:'Friend Guard', helpingHand:'Helping Hand', battery:'Battery', powerSpot:'Power Spot', steelySpirit:'Steely Spirit', charge:'Charge', flowerGift:'Flower Gift', powerTrick:'Power Trick', foresight:'Foresight / Odor Sleuth', rocks:'Stealth Rock', saltCure:'Salt Cure', switching:'Switching out (Pursuit)'}, gfxn:{doubles:'Doubles', gravity:'Gravity', magicRoom:'Magic Room', wonderRoom:'Wonder Room', fairyAura:'Fairy Aura', darkAura:'Dark Aura', auraBreak:'Aura Break', sword:'Sword of Ruin', beads:'Beads of Ruin', tablets:'Tablets of Ruin', vessel:'Vessel of Ruin'}, stellar:'Stellar', ter:{'':'None', Electric:'Electric', Grassy:'Grassy', Misty:'Misty', Psychic:'Psychic'}, maxTag:'Max Move', zTag:'Z-Move',
     gp:{neutral:'No investment (0 EVs, neutral nature)', physFast:'Fast physical (Jolly, 252 Atk/Spe)', physPow:'Strong physical (Adamant, 252 Atk/Spe)', specFast:'Fast special (Timid, 252 SpA/Spe)', specPow:'Strong special (Modest, 252 SpA/Spe)', physWall:'Physical wall (Bold, 252 HP/Def)', specWall:'Special wall (Calm, 252 HP/SpD)', max:'Maxed (252 EVs in Atk/SpA/Spe…)'}
   }
 };
@@ -195,10 +195,12 @@ function finalStats(side) {
 }
 const monOf = side => {
   const sp = G.SP[side.sp], stats = finalStats(side);
-  if (stats && S.gen === 8 && side.dmax) stats[0] *= 2;      // Dynamax duplica los PS
-  const m = {gender:S.gen >= 2 ? side.gender : '', tera:S.gen >= 9 ? side.tera : '', sp, lvl:side.lvl, stats, stages:side.stages, ab:side.ab, abOn:side.abOn, item:side.item, status:side.status, hpPct:side.hpPct, reflect:side.reflect, lscreen:side.lscreen, evo:!!(typeof EVO_PRE !== 'undefined' && sp && sp.num && EVO_PRE[sp.num]), spe:speedOf(side)};
-  Object.keys(side.fx || {}).forEach(k => { if (side.fx[k]) m[k] = true; });
-  return m;
+  const old = oldGen();
+  return {sp, stats, lvl:side.lvl, stages:side.stages, gender:S.gen >= 2 ? side.gender : '', tera:S.gen >= 9 && side.teraOn ? side.tera : '', nat:hasNat() ? side.nat : '',
+    ab:side.ab, abOn:side.abOn, item:side.item, status:side.status, hpPct:side.hpPct, dmax:S.gen === 8 && side.dmax,
+    iv:old ? null : side.iv, ev:old ? null : side.ev, reflect:side.reflect, lscreen:side.lscreen, fx:side.fx || {},
+    alliesFainted:S.gen >= 9 ? side.alliesFainted : 0, boostedStat:S.gen >= 9 ? side.boostedStat : '',
+    evo:!!(typeof EVO_PRE !== 'undefined' && sp && sp.num && EVO_PRE[sp.num])};
 };
 const FIXED_HITS = {'Double Kick':2, 'Dual Chop':2, 'Bonemerang':2, 'Double Hit':2, 'Gear Grind':2, 'Twineedle':2, 'Dual Wingbeat':2, 'Double Iron Bash':2, 'Surging Strikes':3};
 
@@ -221,6 +223,7 @@ function buildSide(idx) {
   const selSt = el('select');
   const inHp = el('input', {type:'number', min:1, max:100});
   const chkRef = el('input', {type:'checkbox'}), chkLs = el('input', {type:'checkbox'});
+  const chkTera = el('input', {type:'checkbox'}), lblTera = el('label', {class:'badge'}, chkTera, el('span'));
   const selGen = el('select'), selTera = el('select'), chkDmax = el('input', {type:'checkbox'});
   const selPre = el('select', {class:'presel'}), bSave = el('button', {type:'button', class:'btn small'}), bDel = el('button', {type:'button', class:'btn small'});
   const lbls = {};
@@ -234,7 +237,7 @@ function buildSide(idx) {
       f('level', inLvl), f('nature', selNat),
       f('ability', wrap(inAb), 'span2'), f('abOn', el('label', {class:'chk'}, chkAb, el('span', {class:'abtxt'})), 'chkcell'), f('gender', selGen),
       f('item', wrap(inItem), 'span2'), f('status', selSt),
-      f('hp', inHp), f('tera', selTera, 'span2 tera'), f('dmax', el('label', {class:'chk'}, chkDmax, el('span', {class:'dmtxt'})), 'chkcell dmax')));
+      f('hp', inHp), f('tera', el('div', {class:'terabox'}, selTera, lblTera), 'span2 tera'), f('dmax', el('label', {class:'chk'}, chkDmax, el('span', {class:'dmtxt'})), 'chkcell dmax')));
 
   // tabla de stats
   const tbl = el('div', {class:'stats'});
@@ -266,9 +269,11 @@ function buildSide(idx) {
     const critL = el('label', {class:'chk small'}, crit, el('span'));
     const zc = el('input', {type:'checkbox'});
     const zL = el('label', {class:'chk small zl'}, zc, el('span'));
+    const stc = el('input', {type:'checkbox'});
+    const stL = el('label', {class:'chk small stl'}, stc, el('span'));
     const res = el('div', {class:'res'});
     const bar = el('div', {class:'bar'}, el('i'), el('b'));
-    const row = el('div', {class:'mrow'}, el('div', {class:'mline'}, wrap(inM), info, bp, hits, critL, zL), res, bar);
+    const row = el('div', {class:'mrow'}, el('div', {class:'mline'}, wrap(inM), info, bp, hits, critL, zL, stL), res, bar);
     combobox(inM, () => moveOpts(side()), v => {
       if (v === undefined) { inM.value = side().mv[j].n ? tr('m', side().mv[j].n) : ''; return; }
       side().mv[j].n = v; if (v) { const fh = FIXED_HITS[v]; if (fh) side().mv[j].hits = fh; }
@@ -278,14 +283,20 @@ function buildSide(idx) {
     hits.oninput = () => { side().mv[j].hits = hits.value === '' ? '' : clamp(+hits.value, 1, 10); save(); refresh(); };
     crit.onchange = () => { side().mv[j].crit = crit.checked; save(); refresh(); };
     zc.onchange = () => { side().mv[j].z = zc.checked; save(); refresh(); };
+    stc.onchange = () => { side().mv[j].stellar = stc.checked; save(); refresh(); };
     movesBox.append(row);
-    return {inM, info, bp, hits, crit, critL, zc, zL, res, bar, row};
+    return {inM, info, bp, hits, crit, critL, zc, zL, stc, stL, res, bar, row};
   });
 
-  const scr = el('div', {class:'screens'}, el('span', {class:'sclbl'}), el('label', {class:'chk small'}, chkRef, el('span', {class:'t1'})), el('label', {class:'chk small'}, chkLs, el('span', {class:'t2'})));
+  const scr = el('div', {class:'screens'}, el('label', {class:'badge'}, chkRef, el('span', {class:'t1'})), el('label', {class:'badge'}, chkLs, el('span', {class:'t2'})));
   const speedLine = el('div', {class:'speed'});
   const fxChk = {};
-  FX.forEach(([k, g]) => { const c = el('input', {type:'checkbox'}); fxChk[k] = c; const lb = el('label', {class:'chk small', 'data-g':g}, c, el('span')); scr.append(lb); c.onchange = () => { side().fx[k] = c.checked; save(); refreshAll(); }; });
+  FX.forEach(([k, g]) => { const c = el('input', {type:'checkbox'}); fxChk[k] = c; const lb = el('label', {class:'badge', 'data-g':g}, c, el('span')); scr.append(lb); c.onchange = () => { side().fx[k] = c.checked; save(); refreshAll(); }; });
+  const inAl = el('input', {type:'number', min:0, max:5, class:'hitin'}), selBo = el('select');
+  const alL = el('label', {class:'chk small'}, el('span'), inAl), boL = el('label', {class:'chk small'}, el('span'), selBo);
+  scr.append(alL, boL);
+  inAl.oninput = () => { side().alliesFainted = clamp(+inAl.value || 0, 0, 5); save(); refresh(); };
+  selBo.onchange = () => { side().boostedStat = selBo.value; save(); refreshAll(); };
   const reset = el('button', {type:'button', class:'btn small', text:''});
   const mh = el('h3', {text:''});
   const presets = el('div', {class:'presets'}, selPre, bSave, bDel);
@@ -312,6 +323,7 @@ function buildSide(idx) {
   selSt.onchange = () => { side().status = selSt.value; save(); refresh(); };
   chkAb.onchange = () => { side().abOn = chkAb.checked; save(); refresh(); };
   selGen.onchange = () => { side().gender = selGen.value; save(); refresh(); };
+  chkTera.onchange = () => { side().teraOn = chkTera.checked; save(); refreshAll(); };
   selTera.onchange = () => { side().tera = selTera.value; save(); refreshAll(); };
   chkDmax.onchange = () => { side().dmax = chkDmax.checked; save(); refresh(); };
   selPre.onchange = () => { const v = selPre.value; selPre.value = ''; if (v) applyPreset(idx, v); };
@@ -321,7 +333,7 @@ function buildSide(idx) {
   chkLs.onchange = () => { side().lscreen = chkLs.checked; save(); refresh(); };
   reset.onclick = () => { const sp = side().sp; S.sides[idx] = Object.assign(blankSide(), {sp}); save(); refreshAll(); };
 
-  const o = {selGen, selTera, chkDmax, selPre, bSave, bDel, idx, root, title, sprite, types, inSp, inLvl, selNat, inAb, chkAb, inItem, selSt, inHp, chkRef, chkLs, fxChk, rows, mrows, lbls, head, scr, reset, mh, speedLine};
+  const o = {selGen, selTera, chkTera, lblTera, chkDmax, selPre, bSave, bDel, idx, root, title, sprite, types, inSp, inLvl, selNat, inAb, chkAb, inItem, selSt, inHp, chkRef, chkLs, fxChk, inAl, selBo, alL, boL, rows, mrows, lbls, head, scr, reset, mh, speedLine};
   sides.push(o);
   return o;
 }
@@ -431,22 +443,39 @@ function paintSprite(o) {
   const img = el('img', {alt:sp.n, src:urls[0]}); let n = 0;
   img.onerror = () => { if (++n < urls.length) img.src = urls[n]; else img.style.visibility = 'hidden'; };
   o.sprite.append(img);
-  const tr0 = S.gen >= 9 ? S.sides[o.idx].tera : '';
+  const tr0 = S.gen >= 9 && S.sides[o.idx].teraOn ? S.sides[o.idx].tera : '';
   if (tr0 === 'Stellar') { sp.t.forEach(x => { const c = el('span', {class:'type', text:tt(x)}); c.style.background = TYPE_COLORS[x] || '#666'; o.types.append(c); }); const c = el('span', {class:'type', text:'◆ ' + t('stellar')}); c.style.background = 'linear-gradient(90deg,#e8622c,#e8b90c,#4fae3d,#3a8de0,#a350cc)'; o.types.append(c); }
   const ts = tr0 && tr0 !== 'Stellar' ? [tr0] : tr0 ? [] : sp.t;
   ts.forEach(x => { const c = el('span', {class:'type', text:(ts !== sp.t ? '◆ ' : '') + tt(x)}); c.style.background = TYPE_COLORS[x] || '#666'; o.types.append(c); });
 }
 const fmtPct = (x, hp) => (x * 100 / hp).toFixed(1).replace(/\.0$/, '');
-function koText(rolls, hp) {
-  const k = E.koSummary(rolls, hp);
-  if (!k.n) return '';
-  if (k.n === 1) return k.chance >= 1 ? t('ko1') : t('koP')((k.chance * 100).toFixed(1), 1);
-  if (k.n > 4) return k.n > 6 ? t('koMore')(7) : t('koPossible')(k.n);
-  return k.chance >= 1 ? t('koG')(k.n) : k.chance > 0 ? t('koP')((k.chance * 100).toFixed(1), k.n) : t('koG')(k.n + 1);
+const KO_ES = [[/Stealth Rock/g, 'Trampa Rocas'], [/Spikes/g, 'Púas'], [/hail damage/g, 'daño de granizo'], [/sandstorm damage/g, 'daño de tormenta de arena'], [/Leftovers recovery/g, 'Restos'], [/Black Sludge recovery/g, 'Lodo Negro'], [/Sitrus Berry recovery/g, 'Baya Aranja'], [/Grassy Terrain recovery/g, 'Campo de Hierba'], [/Ice Body recovery/g, 'Gélido'], [/Rain Dish recovery/g, 'Cura Lluvia'], [/Dry Skin recovery/g, 'Piel Seca'], [/Poison Heal recovery/g, 'Antídoto'], [/poison damage/g, 'veneno'], [/burn damage/g, 'quemadura'], [/Salt Cure damage/g, 'Salazón'], [/Black Sludge damage/g, 'Lodo Negro'], [/Sticky Barb damage/g, 'Toxipúas'], [/Bad Dreams/g, 'Mal Sueño'], [/Nightmare/g, 'Pesadilla'], [/Leech Seed/g, 'Drenadoras'], [/Aqua Ring recovery/g, 'Anillo Acuático'], [/ and /g, ' y '], [/ recovery/g, '']];
+function koText(res) {
+  let k; try { k = res.kochance(); } catch (e) { return ''; }
+  if (!k || !k.n) return '';
+  let out;
+  if (k.n === 1) out = k.chance >= 1 ? t('ko1') : t('koP')((k.chance * 100).toFixed(1), 1);
+  else if (k.chance === undefined) out = k.n > 6 ? t('koMore')(7) : t('koPossible')(k.n);
+  else out = k.chance >= 1 ? t('koG')(k.n) : t('koP')((k.chance * 100).toFixed(1), k.n);
+  const m = / after (.+)$/.exec(k.text || '');
+  if (m) { let x = m[1]; if (lang === 'es') KO_ES.forEach(([r, v]) => { x = x.replace(r, v); }); out += ' (' + (lang === 'es' ? 'tras ' : 'after ') + x + ')'; }
+  return out;
+}
+function effOf(out, m) {
+  const mv = out.move, d = out.def, ty = (out.res.rawDesc && out.res.rawDesc.moveType) || mv.type;
+  let dt = d.teraType && d.teraType !== 'Stellar' ? [d.teraType] : d.types.slice();
+  if (!E.typesIn(S.gen).includes(ty)) return 1;
+  dt = dt.filter(x => E.typesIn(S.gen).includes(x));
+  if (S.gen >= 4 && S.gravity && ty === 'Ground') dt = dt.filter(x => x !== 'Flying');
+  let e = E.typeEff(S.gen, ty, dt);
+  if (m.n === 'Freeze-Dry' && dt.includes('Water')) e = E.typeEff(S.gen, ty, dt.filter(x => x !== 'Water')) * 2;
+  if (m.n === 'Flying Press') e *= E.typeEff(S.gen, 'Flying', dt);
+  return e;
 }
 function renderOne(o) {
   const atk = S.sides[o.idx], def = S.sides[1 - o.idx];
   const A = G.SP[atk.sp] ? monOf(atk) : null, D = G.SP[def.sp] ? monOf(def) : null;
+  const field = Object.assign({weather:S.weather, terrain:S.terrain}, S.fx);
   o.mrows.forEach((r, j) => {
     const m = atk.mv[j], mdata = G.MV[m.n];
     r.res.className = 'res'; r.res.textContent = ''; r.res.removeAttribute('title');
@@ -455,27 +484,25 @@ function renderOne(o) {
     r.info.replaceChildren(); r.bp.placeholder = t('bp'); r.hits.placeholder = t('hits');
     r.bp.disabled = r.hits.disabled = r.crit.disabled = r.zc.disabled = !mdata;
     r.zL.hidden = S.gen !== 7;
+    r.stL.hidden = !(S.gen >= 9 && atk.teraOn && atk.tera === 'Stellar'); r.stc.checked = m.stellar !== false;
     if (!mdata) return;
     const c = el('span', {class:'type', text:tt(mdata[1])}); c.style.background = TYPE_COLORS[mdata[1]] || '#666';
     r.info.append(c, el('span', {class:'cat c' + mdata[2], text:catName(mdata[2])}));
     r.bp.placeholder = mdata[3] ? String(mdata[3]) : t('bp');
-    if (!A || !D) return;
-    const bp = m.bp === '' ? mdata[3] : m.bp;
-    let mvo = {n:m.n, type:mdata[1], cat:mdata[2], bp, hits:m.hits || FIXED_HITS[m.n] || 1, crit:m.crit}, tag = '';
-    if (mdata[2] !== 'T') {
-      if (S.gen === 7 && m.z) { mvo = Object.assign(mvo, {n:'', bp:E.zPower(bp), hits:1}); tag = 'zTag'; }
-      else if (S.gen === 8 && atk.dmax) { mvo = Object.assign(mvo, {n:'', bp:E.maxPower(bp, mdata[1]), hits:1}); tag = 'maxTag'; }
-    }
-    const out = E.calc(S.gen, A, D, mvo, {weather:S.weather, terrain:S.terrain, ...S.fx});
-    if (!out) { r.res.textContent = mdata[2] === 'T' ? '' : t('noDmg'); r.res.classList.add('none'); return; }
-    const rolls = out.rolls, hp = D.stats[0], curHP = Math.max(1, Math.round(hp * D.hpPct / 100)), mn = rolls[0], mx = rolls[rolls.length - 1];
-    if (mx <= 0) { r.res.textContent = t('immune') + (out.notes[0] && out.notes[0].includes(':') ? ' (' + (out.notes[0].startsWith('ab:') ? tr('a', out.notes[0].slice(3)) : tr('i', out.notes[0].slice(5))) + ')' : ''); r.res.classList.add('none'); return; }
-    const eff = out.eff, ef = eff === 1 ? '' : eff > 1 ? ' ×' + eff : ' ×' + eff;
+    if (!A || !D || mdata[2] === 'T') return;
+    const mvo = {n:m.n, type:mdata[1], cat:mdata[2], bp:m.bp === '' ? mdata[3] : m.bp, bpUser:m.bp !== '', hits:m.hits || '', crit:m.crit, z:m.z, stellar:m.stellar !== false};
+    let out;
+    try { out = CalcBridge.calc(S.gen, A, D, mvo, field); } catch (err) { console.error(err); r.res.textContent = t('noDmg'); r.res.classList.add('none'); return; }
+    if (!out) { r.res.textContent = t('noDmg'); r.res.classList.add('none'); return; }
+    const tag = out.move.isMax ? 'maxTag' : out.move.isZ ? 'zTag' : '';
+    const rolls = out.rolls, hp = out.hp, curHP = out.curHP, mn = rolls[0], mx = rolls[rolls.length - 1];
+    if (mx <= 0) { r.res.textContent = t('immune'); r.res.classList.add('none'); return; }
+    const eff = effOf(out, m), ef = eff === 1 ? '' : ' ×' + eff;
     r.res.innerHTML = '';
     if (tag) r.res.append(el('span', {class:'tag', text:t(tag)}));
-    r.res.append(el('b', {text:`${mn}–${mx}`}), el('span', {text:` (${fmtPct(mn, hp)}–${fmtPct(mx, hp)}%)`}), el('em', {text:ef}), el('span', {class:'ko', text:' · ' + koText(rolls, curHP)}));
+    r.res.append(el('b', {text:`${mn}–${mx}`}), el('span', {text:` (${fmtPct(mn, hp)}–${fmtPct(mx, hp)}%)`}), el('em', {text:ef}), el('span', {class:'ko', text:' · ' + koText(out.res)}));
     r.res.classList.add(eff > 1 ? 'se' : eff < 1 ? 'nve' : 'nm');
-    r.res.title = `${A.sp.n} ${m.n} ${t('vs')} ${D.sp.n}: ${mn}-${mx}  (${out.rolls.length} rolls)`;
+    r.res.title = out.full || `${A.sp.n} ${m.n} ${t('vs')} ${D.sp.n}: ${mn}-${mx}`;
     r.bar.hidden = false;
     r.bar.firstChild.style.width = Math.min(100, mn * 100 / curHP) + '%';
     r.bar.lastChild.style.width = Math.min(100, Math.max(0, (mx - mn) * 100 / curHP)) + '%';
@@ -484,13 +511,24 @@ function renderOne(o) {
 }
 function speedOf(side) {
   const st = finalStats(side); if (!st) return null;
-  let v = Math.floor(st[5] * E.stageMul(S.gen, side.stages[4]));
-  if (side.status === 'par') v = Math.floor(v * (S.gen >= 7 ? 0.5 : 0.25));
-  if (side.item === 'Choice Scarf') v = Math.floor(v * 1.5);
-  if (S.gen >= 4 && side.fx && side.fx.tailwind) v *= 2;
-  if (side.item === 'Iron Ball' || side.item === 'Macho Brace') v = Math.floor(v * 0.5);
-  if (hasAb() && ((side.ab === 'Swift Swim' && S.weather === 'Rain') || (side.ab === 'Chlorophyll' && S.weather === 'Sun') || (side.ab === 'Sand Rush' && S.weather === 'Sand') || (side.ab === 'Slush Rush' && (S.weather === 'Hail' || S.weather === 'Snow')))) v *= 2;
-  return v;
+  const g = S.gen, ab = hasAb() ? side.ab : '', it = hasItem() ? side.item : '', w = S.weather, on = side.abOn, sx = side.fx || {};
+  let v = Math.floor(st[5] * E.stageMul(g, side.stages[4]));
+  let m = 1;
+  if (g >= 3) {
+    if ((ab === 'Swift Swim' && (w === 'Rain' || w === 'Heavy Rain')) || (ab === 'Chlorophyll' && (w === 'Sun' || w === 'Harsh Sun')) || (ab === 'Sand Rush' && w === 'Sand') || (ab === 'Slush Rush' && (w === 'Hail' || w === 'Snow')) || (ab === 'Surge Surfer' && S.terrain === 'Electric') || (ab === 'Unburden' && on)) m *= 2;
+    if (ab === 'Quick Feet' && side.status) m *= 1.5;
+    if (ab === 'Slow Start' && on) m *= 0.5;
+    if (g >= 9 && ((ab === 'Protosynthesis' && (w === 'Sun' || w === 'Harsh Sun' || it === 'Booster Energy')) || (ab === 'Quark Drive' && (S.terrain === 'Electric' || it === 'Booster Energy'))) && (on || it === 'Booster Energy' || w === 'Sun' || S.terrain === 'Electric')) {
+      const bs = side.boostedStat; if (bs === 'spe' || bs === '') { if (bs === 'spe' || (st[5] >= Math.max(st[1], st[2], st[3], st[4]))) m *= 1.5; }
+    }
+  }
+  if (it === 'Choice Scarf') m *= 1.5;
+  if (it === 'Iron Ball' || it === 'Macho Brace' || /^Power (Weight|Bracer|Belt|Lens|Band|Anklet)$/.test(it)) m *= 0.5;
+  if (it === 'Quick Powder' && /^Ditto/.test(side.sp)) m *= 2;
+  v = Math.floor(v * m);
+  if (side.status === 'par' && !(ab === 'Quick Feet' && g >= 3)) v = Math.floor(v * (g >= 7 ? 0.5 : 0.25));
+  if (g >= 4 && sx.tailwind) v *= 2;
+  return Math.min(10000, v);
 }
 function paintLabels(o) {
   const side = S.sides[o.idx], sp = G.SP[side.sp];
@@ -504,8 +542,8 @@ function paintLabels(o) {
   o.reset.textContent = t('reset'); o.mh.textContent = t('moves');
   o.head.children[1].textContent = t('base'); o.head.children[2].textContent = oldGen() ? t('dv') : t('iv');
   o.head.children[3].textContent = oldGen() ? t('se') : t('ev'); o.head.children[4].textContent = t('total'); o.head.children[5].textContent = t('stage');
-  o.scr.querySelector('.sclbl').textContent = t('screens') + ':'; o.scr.querySelector('.t1').textContent = t('refl'); o.scr.querySelector('.t2').textContent = t('ls');
-  o.mrows.forEach(r => { r.crit.parentElement.querySelector('span').textContent = t('crit'); r.zc.parentElement.querySelector('span').textContent = t('zm'); r.zL.title = t('zTip'); r.inM.placeholder = t('move'); });
+  o.scr.querySelector('.t1').textContent = t('refl'); o.scr.querySelector('.t2').textContent = t('ls');
+  o.mrows.forEach(r => { r.crit.parentElement.querySelector('span').textContent = t('crit'); r.zc.parentElement.querySelector('span').textContent = t('zm'); r.stL.querySelector('span').textContent = t('stl1'); r.zL.title = t('zTip'); r.inM.placeholder = t('move'); });
 }
 function paintValues(o) {
   const side = S.sides[o.idx], sp = G.SP[side.sp];
@@ -522,10 +560,15 @@ function paintValues(o) {
   o.selNat.value = hasNat() ? side.nat : '';
   o.selSt.replaceChildren(...Object.entries(t('st')).map(([k, v]) => el('option', {value:k, text:v}))); o.selSt.value = side.status;
   FX.forEach(([k, g]) => { const c = o.fxChk[k]; c.checked = !!(side.fx && side.fx[k]); c.parentElement.hidden = S.gen < g; c.nextSibling.textContent = t('fxn')[k]; });
+  o.alL.hidden = o.boL.hidden = S.gen < 9;
+  o.alL.firstChild.textContent = t('allies') + ' '; o.boL.firstChild.textContent = t('boosted') + ' ';
+  setv(o.inAl, side.alliesFainted);
+  o.selBo.replaceChildren(...[['', t('boostedAuto')], ['atk', I[lang].stats[1]], ['def', I[lang].stats[2]], ['spa', I[lang].stats[3]], ['spd', I[lang].stats[4]], ['spe', I[lang].stats[5]]].map(([v, l]) => el('option', {value:v, text:l}))); o.selBo.value = side.boostedStat;
   o.chkRef.checked = side.reflect; o.chkLs.checked = side.lscreen;
   o.selGen.replaceChildren(...Object.entries(t('gen_')).map(([k, v]) => el('option', {value:k, text:v}))); o.selGen.value = side.gender; o.selGen.disabled = S.gen < 2;
   o.selTera.replaceChildren(el('option', {value:'', text:t('noTera')}), ...TERAS.map(x => el('option', {value:x, text:x === 'Stellar' ? t('stellar') : tt(x)}))); o.selTera.value = side.tera;
-  o.selTera.parentElement.hidden = S.gen < 9;
+  o.selTera.parentElement.parentElement.hidden = S.gen < 9;
+  o.chkTera.checked = !!side.teraOn; o.lblTera.lastChild.textContent = t('teraOn');
   o.chkDmax.checked = side.dmax; o.chkDmax.parentElement.parentElement.hidden = S.gen !== 8;
   fillPresets(o);
   if (S.gen) loadSets(S.gen, () => fillPresets(o));
@@ -535,8 +578,8 @@ function paintValues(o) {
     r.row.hidden = hide;
     r.nm.textContent = S.gen === 1 && i === 3 ? t('special') : I[lang].stats[i];
     r.base.textContent = sp ? sp.s[i] : '–';
-    const iv = oldGen() && i === 0 ? E.hpDV(side.iv) : side.iv[i];
-    r.iv.disabled = oldGen() && i === 0; r.iv.max = oldGen() ? 15 : 31; r.ev.max = oldGen() ? 65535 : 252;
+    const iv = oldGen() && i === 0 ? E.hpDV(side.iv) : oldGen() && i === 4 ? side.iv[3] : side.iv[i];
+    r.iv.disabled = oldGen() && (i === 0 || i === 4); r.iv.max = oldGen() ? 15 : 31; r.ev.max = oldGen() ? 65535 : 252;
     setv(r.iv, iv); setv(r.ev, side.ev[i]);
     r.tot.textContent = stats ? stats[i] : '–';
     if (i) r.stg.value = side.stages[i - 1];
@@ -630,7 +673,7 @@ function paintHeader() {
   // línea de velocidad entre ambos (debajo del campo)
   gs.onchange = () => { setGen(+gs.value); refreshAll(); paintHeader(); };
   $('weather').onchange = () => { S.weather = $('weather').value; save(); refresh(); };
-  { const box = $('gfx'); box.replaceChildren(); GFX.forEach(([k, g]) => { const c = el('input', {type:'checkbox', id:'g_' + k}); c.onchange = () => { S.fx[k] = c.checked; save(); refreshAll(); }; box.append(el('label', {class:'chk small', 'data-g':g}, c, el('span'))); }); }
+  { const box = $('gfx'); box.replaceChildren(); GFX.forEach(([k, g]) => { const c = el('input', {type:'checkbox', id:'g_' + k}); c.onchange = () => { S.fx[k] = c.checked; save(); refreshAll(); }; box.append(el('label', {class:'badge', 'data-g':g}, c, el('span'))); }); }
   $('terrain').onchange = () => { S.terrain = $('terrain').value; save(); refresh(); };
   $('rnd').onclick = () => { S.random = !S.random; PMRandom.set(S.random); sanitize(); save(); refreshAll(); paintHeader(); };
   PMRandom.onChange(v => { S.random = v; sanitize(); save(); refreshAll(); paintHeader(); });
