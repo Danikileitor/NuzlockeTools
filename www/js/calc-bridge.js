@@ -86,6 +86,8 @@ const CalcBridge = (() => {
     };
     if (+m.hits > 1) o.hits = +m.hits;
     if (hasBp && m.bpUser) o.overrides = {basePower: +m.bp};
+    else if (gen >= 9 && m.n === 'Last Respects') o.overrides = {basePower: 50 + 50 * Math.min(5, M.alliesFainted || 0)};
+    else if (gen >= 9 && m.n === 'Rage Fist') o.overrides = {basePower: Math.min(350, 50 + 50 * (M.hitsTaken || 0))};
     const mv = new C.Move(genObj(gen), m.n, o);
     if (gen <= 3 && mv.category === 'Status') mv.category = 'Status';
     return mv;

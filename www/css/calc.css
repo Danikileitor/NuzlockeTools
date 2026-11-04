@@ -83,3 +83,20 @@
 .screens .badge[hidden]{display:none}
 .badge{text-transform:none;letter-spacing:0}
 .terabox{display:flex;gap:8px;align-items:center}.terabox select{flex:1;min-width:0}.terabox .badge{white-space:nowrap}
+
+.badge[hidden]{display:none}
+.nat-up{color:#ff5d5d}.nat-dn{color:#5d9bff}
+.terabox select{flex:0 0 auto;width:auto;max-width:100%}
+.terabox{justify-content:flex-start}
+.badge{white-space:nowrap}.chkcell .badge{justify-content:center;padding:6px 8px}
+.counters[hidden]{display:none}
+.srow .nat-up{color:#ff5d5d}.srow .nat-dn{color:#5d9bff}
+
+.seg{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line,#3a3f52);border-radius:999px;overflow:hidden;font-size:12px}
+.seg[hidden]{display:none}
+.seg .seglbl{padding:4px 10px;color:var(--muted);border-right:1px solid var(--line,#3a3f52)}
+.seg button{all:unset;cursor:pointer;padding:4px 11px;color:var(--muted);min-width:14px;text-align:center;transition:background .15s,color .15s}
+.seg button+button{border-left:1px solid var(--line,#3a3f52)}
+.seg button:hover{color:var(--text)}
+.seg button.on{background:var(--accent,#f5c542);color:#14161e;font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent,#f5c542);outline-offset:-2px}
