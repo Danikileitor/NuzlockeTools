@@ -82,6 +82,35 @@ const CalcEngine = (() => {
   const RESIST_BERRY = {'Occa Berry':'Fire','Passho Berry':'Water','Wacan Berry':'Electric','Rindo Berry':'Grass','Yache Berry':'Ice','Chople Berry':'Fighting','Kebia Berry':'Poison','Shuca Berry':'Ground','Coba Berry':'Flying','Payapa Berry':'Psychic','Tanga Berry':'Bug','Charti Berry':'Rock','Kasib Berry':'Ghost','Haban Berry':'Dragon','Colbur Berry':'Dark','Babiri Berry':'Steel','Roseli Berry':'Fairy'};
   // habilidades que anulan un tipo (y a veces curan); [tipo]
   const IMMUNE_AB = {Levitate:'Ground','Volt Absorb':'Electric','Lightning Rod':'Electric','Motor Drive':'Electric','Water Absorb':'Water','Storm Drain':'Water','Dry Skin':'Water','Flash Fire':'Fire','Sap Sipper':'Grass','Earth Eater':'Ground','Well-Baked Body':'Fire','Wind Rider':null};
+  const SPREAD = new Set(['Earthquake', 'Surf', 'Rock Slide', 'Heat Wave', 'Blizzard', 'Discharge', 'Dazzling Gleam', 'Muddy Water', 'Razor Leaf', 'Icy Wind', 'Bulldoze', 'Eruption', 'Water Spout', 'Hyper Voice', 'Boomburst', 'Snarl', 'Sludge Wave', 'Lava Plume', 'Parabolic Charge', 'Petal Blizzard', 'Make It Rain', 'Breaking Swipe', 'Glacial Lance', 'Astral Barrage', 'Origin Pulse', 'Precipice Blades', 'Sparkling Aria', 'Mortal Spin', 'Electroweb', 'Struggle Bug', 'Magnitude', 'Twister', 'Swift', 'Powder Snow', 'Hurricane Wind', 'Misty Explosion', 'Self-Destruct', 'Explosion', 'Core Enforcer', 'Land\'s Wrath', 'Thousand Arrows', 'Diamond Storm', 'Bleakwind Storm', 'Wildbolt Storm', 'Sandsear Storm', 'Springtide Storm', 'Clangorous Soulblaze', 'Burning Jealousy', 'Teatime', 'Corrosive Gas', 'Syrup Bomb', 'Dragon Darts']);
+  // Potencia (y tipo) de los movimientos cuyo daño depende de la situación
+  const SW = ['Brine'];
+  function dynBp(gen, a, d, mv, f, bp, curHP, maxHP) {
+    const aMax = a.stats[0], aHP = Math.max(1, Math.round(aMax * (a.hpPct == null ? 100 : a.hpPct) / 100));
+    const pos = m => (m.stages || []).reduce((s, v) => s + Math.max(0, v || 0), 0);
+    const ds = !!d.status, dpsn = d.status === 'psn' || d.status === 'tox';
+    switch (mv.n) {
+      case 'Eruption': case 'Water Spout': case 'Dragon Energy': return {bp: Math.max(1, Math.floor(150 * aHP / aMax))};
+      case 'Flail': case 'Reversal': { const p = Math.floor(48 * aHP / aMax); return {bp: p <= 1 ? 200 : p <= 4 ? 150 : p <= 9 ? 100 : p <= 16 ? 80 : p <= 32 ? 40 : 20}; }
+      case 'Facade': return gen >= 3 && ['brn', 'par', 'psn', 'tox'].includes(a.status) ? {bp: bp * 2} : null;
+      case 'Hex': return ds ? {bp: bp * 2} : null;
+      case 'Venoshock': return dpsn ? {bp: bp * 2} : null;
+      case 'Acrobatics': return !a.item ? {bp: bp * 2} : null;
+      case 'Knock Off': return gen >= 6 && d.item ? {bp: Math.floor(bp * 1.5)} : null;
+      case 'Brine': return curHP * 2 <= maxHP ? {bp: bp * 2} : null;
+      case 'Hard Press': case 'Wring Out': case 'Crush Grip': return {bp: Math.max(1, Math.floor((mv.n === 'Hard Press' ? 100 : 120) * curHP / maxHP))};
+      case 'Weather Ball': {
+        const w = f.weather, t = (w === 'Sun' || w === 'Harsh Sun') ? 'Fire' : (w === 'Rain' || w === 'Heavy Rain') ? 'Water' : w === 'Sand' ? 'Rock' : (w === 'Hail' || w === 'Snow') ? 'Ice' : null;
+        return t ? {bp: 100, type: t} : null;
+      }
+      case 'Gyro Ball': return a.spe && d.spe ? {bp: Math.min(150, Math.floor(25 * d.spe / a.spe) + 1)} : null;
+      case 'Electro Ball': { if (!a.spe || !d.spe) return null; const r = a.spe / d.spe; return {bp: r >= 4 ? 150 : r >= 3 ? 120 : r >= 2 ? 80 : r >= 1 ? 60 : 40}; }
+      case 'Stored Power': case 'Power Trip': return {bp: 20 + 20 * pos(a)};
+      case 'Punishment': return {bp: Math.min(200, 60 + 20 * pos(d))};
+      case 'Return': case 'Frustration': return {bp: 102};
+    }
+    return null;
+  }
   const E_stage = (gen, n) => stageMul(gen, Math.max(-6, Math.min(6, n || 0)));
   const MOLD = new Set(['Mold Breaker','Teravolt','Turboblaze']);
   const PUNCH = /Punch|Plasma Fists|Meteor Mash|Sky Uppercut|Comet Punch|Dynamic Punch|Mach Punch/i, BITE = /Bite|Fang|Crunch|Jaw Lock/i, PULSE = /Pulse|Aura Sphere/i;
@@ -107,12 +136,13 @@ const CalcEngine = (() => {
     const abA = gen >= 3 ? (a.ab || '') : '', abD = gen >= 3 ? (d.ab || '') : '';
     const abDef = MOLD.has(abA) ? '' : abD;                 // Mold Breaker ignora la habilidad rival
     const itA = gen >= 2 ? (a.item || '') : '', itD = gen >= 2 ? (d.item || '') : '';
+    const stellar = gen >= 9 && a.tera === 'Stellar';
     if (mv.n === 'Tera Blast' && a.tera) {
-      type = a.tera;
+      type = a.tera; if (stellar) bp = 100;
       cat = (a.stats[1] * E_stage(gen, a.stages[0])) > (a.stats[3] * E_stage(gen, a.stages[2])) ? 'P' : 'S';
     }
     if (cat === 'T') return null;
-    const dTypes = d.tera ? [d.tera] : d.sp.t.slice();
+    const dTypes = d.tera && d.tera !== 'Stellar' ? [d.tera] : d.sp.t.slice();
 
     // tipo del movimiento (habilidades que lo cambian)
     let abTypeBoost = 1;
@@ -130,26 +160,32 @@ const CalcEngine = (() => {
       const v = fx === 'lvl' ? a.lvl : fx === 'half' ? Math.max(1, Math.floor(curHP / 2)) : fx;
       return {rolls:[v], eff:1, notes:[], fixed:true, hits:1};
     }
+    if (!mv.bpFixed) {
+      const dy = dynBp(gen, a, d, mv, f, bp, curHP, maxHP);
+      if (dy) { if (dy.bp != null) bp = dy.bp; if (dy.type) type = dy.type; }
+    }
     if (!bp) return null;
 
     // efectividad
     let eff = typeEff(gen, type, dTypes);
     if (mv.n === 'Freeze-Dry' && dTypes.includes('Water')) eff = typeEff(gen, type, dTypes.filter(t => t !== 'Water')) * 2;
     if (mv.n === 'Flying Press') eff *= typeEff(gen, 'Flying', dTypes);
+    if (f.gravity && gen >= 4 && type === 'Ground') eff = typeEff(gen, type, dTypes.filter(t => t !== 'Flying'));
+    if (f.weather === 'Strong Winds' && gen >= 6 && dTypes.includes('Flying') && ['Electric', 'Ice', 'Rock'].includes(type) && eff1(gen, type, 'Flying') > 1) eff /= 2;
     // inmunidades por habilidad / objeto
     if (gen >= 3 && abDef) {
       const it = IMMUNE_AB[abDef];
-      if (it && it === type && !(abDef === 'Levitate' && itD === 'Iron Ball')) { return {rolls:[0], eff:0, notes:['ab:' + abDef], hits:1}; }
+      if (it && it === type && !(abDef === 'Levitate' && (itD === 'Iron Ball' || f.gravity))) { return {rolls:[0], eff:0, notes:['ab:' + abDef], hits:1}; }
       if (abDef === 'Wonder Guard' && eff <= 1) return {rolls:[0], eff:0, notes:['ab:Wonder Guard'], hits:1};
     }
-    if (itD === 'Air Balloon' && type === 'Ground') return {rolls:[0], eff:0, notes:['item:Air Balloon'], hits:1};
+    if (itD === 'Air Balloon' && type === 'Ground' && !f.gravity) return {rolls:[0], eff:0, notes:['item:Air Balloon'], hits:1};
     if (eff === 0) return {rolls:[0], eff:0, notes:['immune'], hits:1};
 
     // Solar Beam / Blade sin sol
     if ((mv.n === 'Solar Beam' || mv.n === 'Solar Blade') && gen >= 3 && ['Rain','Sand','Hail','Snow','Heavy Rain'].includes(f.weather)) bp = Math.floor(bp / 2);
 
     // Teracristalización: los movimientos del teratipo de menos de 60 de poder suben a 60
-    if (gen >= 9 && a.tera && type === a.tera && bp < 60 && hits === 1 && !mv.noTeraBoost) bp = 60;
+    if (gen >= 9 && a.tera && !stellar && type === a.tera && bp < 60 && hits === 1 && !mv.noTeraBoost) bp = 60;
     // estadísticas de ataque y defensa
     const phys = cat === 'P';
     let atkI = phys ? 1 : 3, defI = phys ? 2 : 4;
@@ -260,6 +296,23 @@ const CalcEngine = (() => {
       if (RESIST_BERRY[itD] === type && (eff > 1 || type === 'Normal') && gen >= 4) finM = chain(finM, M(.5));
       if (itD === 'Chilan Berry' && type === 'Normal' && gen >= 4) finM = chain(finM, M(.5));
     }
+    // efectos del equipo atacante / del campo
+    if (mv.helpingHand || a.helpingHand) bpM = chain(bpM, M(1.5));
+    if (gen >= 7 && a.battery && !phys) bpM = chain(bpM, M(1.3));
+    if (gen >= 8 && a.powerSpot) bpM = chain(bpM, M(1.3));
+    if (gen >= 8 && a.steelySpirit && type === 'Steel') bpM = chain(bpM, M(1.5));
+    if (gen >= 3 && a.charge && type === 'Electric') bpM = chain(bpM, M(2));
+    if (gen >= 3 && f.mudSport && type === 'Electric') bpM = chain(bpM, gen >= 5 ? 1352 : M(.5));
+    if (gen >= 3 && f.waterSport && type === 'Fire') bpM = chain(bpM, gen >= 5 ? 1352 : M(.5));
+    if (gen >= 6 && ((f.fairyAura && type === 'Fairy') || (f.darkAura && type === 'Dark'))) bpM = chain(bpM, f.auraBreak ? M(.75) : 5448);
+    if (gen >= 9) {
+      if (f.sword && phys && !(abA === 'Sword of Ruin')) dfM = chain(dfM, M(.75));
+      if (f.beads && !phys && !(abA === 'Beads of Ruin')) dfM = chain(dfM, M(.75));
+      if (f.tablets && phys && !(abD === 'Tablets of Ruin')) atM = chain(atM, M(.75));
+      if (f.vessel && !phys && !(abD === 'Vessel of Ruin')) atM = chain(atM, M(.75));
+    }
+    if (gen >= 5 && d.friendGuard) finM = chain(finM, M(.75));
+    const spread = !!f.doubles && gen >= 3 && SPREAD.has(mv.n);
     // terrenos (Gen 6+)
     if (gen >= 6 && f.terrain) {
       const grounded = (m, ab, it, types) => !types.includes('Flying') && ab !== 'Levitate' && it !== 'Air Balloon';
@@ -273,7 +326,7 @@ const CalcEngine = (() => {
     if (f.weather === 'Sand' && gen >= 4 && !phys && dTypes.includes('Rock')) dfM = chain(dfM, M(1.5));
     if (f.weather === 'Snow' && gen >= 9 && phys && dTypes.includes('Ice')) dfM = chain(dfM, M(1.5));
     // Pantallas: Gen 1 duplica la defensa
-    const screen = (phys && d.reflect) || (!phys && d.lscreen) || d.veil;
+    const screen = (phys && d.reflect) || (!phys && d.lscreen) || (gen >= 7 && d.veil);
     if (gen === 1 && screen) { D = D * 2; }
 
     if (gen >= 3) { A = modify(A, atM); D = modify(D, dfM); bp = modify(bp, bpM); bp = Math.max(1, bp); }
@@ -299,7 +352,7 @@ const CalcEngine = (() => {
     if (gen === 1 && crit) L *= 2;
     let base = Math.floor(Math.floor(Math.floor(2 * L / 5 + 2) * bp * A / D) / 50);
     const origStab = a.sp.t.includes(type), teraStab = !!a.tera && a.tera === type && gen >= 9;
-    const stab = origStab || teraStab;
+    const stab = origStab || teraStab || stellar;
     const weather = f.weather;
     const wMod = (() => {
       if (gen < 2) return 1;
@@ -314,7 +367,7 @@ const CalcEngine = (() => {
     }
     const burn = a.status === 'brn' && phys && !(abA === 'Guts' && gen >= 3) && mv.n !== 'Facade' && gen >= 2;
     const adap = gen >= 4 && abA === 'Adaptability';
-    const stabMod = !stab ? 1 : (teraStab && origStab) ? (adap ? 2.25 : 2) : adap ? 2 : 1.5;
+    const stabMod = !stab ? 1 : stellar ? (origStab ? (adap ? 2.25 : 2) : 1.2) : (teraStab && origStab) ? (adap ? 2.25 : 2) : adap ? 2 : 1.5;
     const stabMod2 = (!stab && abA === 'Protean' && gen >= 6) ? 1.5 : stabMod;
     const critMod = !crit ? 1 : gen <= 5 ? 2 : 1.5;
     const applyEff = dmg => {
@@ -350,7 +403,8 @@ const CalcEngine = (() => {
       } else if (gen <= 4) {
         dmg = base;
         if (burn) dmg = Math.floor(dmg / 2);
-        if (screen && !crit) dmg = Math.floor(dmg / 2);
+        if (screen && !crit) dmg = f.doubles ? Math.floor(dmg * 2 / 3) : Math.floor(dmg / 2);
+        if (spread) dmg = Math.floor(dmg * (gen === 3 ? .5 : .75));
         if (wMod !== 1) dmg = Math.floor(dmg * wMod);
         dmg += 2;
         if (crit) dmg *= 2;
@@ -362,6 +416,7 @@ const CalcEngine = (() => {
         if (dmg < 1 && eff > 0) dmg = 1;
       } else {
         dmg = base + 2;
+        if (spread) dmg = modify(dmg, 3072);
         if (wMod !== 1) dmg = modify(dmg, M(wMod));
         if (crit) dmg = Math.floor(dmg * critMod);
         dmg = Math.floor(dmg * r / 100);
@@ -369,7 +424,7 @@ const CalcEngine = (() => {
         dmg = applyEff(dmg);
         if (burn) dmg = Math.floor(dmg / 2);
         let fm = finM;
-        if (screen && !crit) fm = chain(fm, gen >= 5 ? M(.5) : M(.5));
+        if (screen && !crit) fm = chain(fm, f.doubles ? 2732 : 2048);
         if (abTypeBoost !== 1) { /* el aumento de las habilidades *-ate se aplica al poder base */ }
         dmg = modify(dmg, fm);
         if (dmg < 1 && eff > 0) dmg = 1;

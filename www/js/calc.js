@@ -19,11 +19,12 @@ const LS = 'dmgcalc-v1', LANG = 'pm-lang';
 let lang = 'es';
 try { lang = JSON.parse(localStorage.getItem(LANG)) || 'es'; } catch (e) {}
 const blankMove = () => ({n:'', bp:'', hits:'', crit:false, z:false});
-const blankSide = () => ({sp:'', lvl:50, nat:'', ab:'', abOn:false, item:'', status:'', hpPct:100, gender:'', tera:'', dmax:false, iv:[31,31,31,31,31,31], ev:[0,0,0,0,0,0], stages:[0,0,0,0,0], reflect:false, lscreen:false, mv:[0,1,2,3].map(blankMove)});
-const S = {gen:9, random:false, weather:'', terrain:'', sides:[Object.assign(blankSide(), {sp:'Charizard'}), Object.assign(blankSide(), {sp:'Blastoise'})]};
+const blankSide = () => ({sp:'', lvl:50, nat:'', ab:'', abOn:false, item:'', status:'', hpPct:100, gender:'', tera:'', dmax:false, iv:[31,31,31,31,31,31], ev:[0,0,0,0,0,0], stages:[0,0,0,0,0], reflect:false, lscreen:false, fx:{}, mv:[0,1,2,3].map(blankMove)});
+const FX = [["tailwind", 4], ["veil", 7], ["friendGuard", 5], ["helpingHand", 3], ["battery", 7], ["powerSpot", 8], ["steelySpirit", 8], ["charge", 3]], GFX = [["doubles", 3], ["gravity", 4], ["mudSport", 3], ["waterSport", 3], ["fairyAura", 6], ["darkAura", 6], ["auraBreak", 6], ["sword", 9], ["beads", 9], ["tablets", 9], ["vessel", 9]];
+const S = {gen:9, random:false, weather:'', terrain:'', fx:{}, sides:[Object.assign(blankSide(), {sp:'Charizard'}), Object.assign(blankSide(), {sp:'Blastoise'})]};
 try {
   const o = JSON.parse(localStorage.getItem(LS) || 'null');
-  if (o) { S.gen = o.gen || 9; S.random = !!o.random; S.weather = o.weather || ''; S.terrain = o.terrain || ''; if (o.sides) S.sides = o.sides.map(x => Object.assign(blankSide(), x, {mv:[0,1,2,3].map(j => Object.assign(blankMove(), (x.mv || [])[j]))})); }
+  if (o) { S.gen = o.gen || 9; S.random = !!o.random; S.weather = o.weather || ''; S.terrain = o.terrain || ''; S.fx = o.fx || {}; if (o.sides) S.sides = o.sides.map(x => Object.assign(blankSide(), x, {mv:[0,1,2,3].map(j => Object.assign(blankMove(), (x.mv || [])[j]))})); }
 } catch (e) {}
 S.random = PMRandom.get();   // Randomlocke compartido entre páginas
 const save = () => { try { localStorage.setItem(LS, JSON.stringify(S)); } catch (e) {} };
@@ -43,7 +44,7 @@ const tr = (k, n) => {
 const I = {
   es: {
     title:'Calculadora de daño', gen:'Generación', rnd:'Randomlocke', rndOn:'Randomlocke activado: puedes elegir cualquier habilidad y cualquier movimiento de la generación', rndOff:'Randomlocke desactivado: solo habilidades y movimientos que el Pokémon puede tener',
-    weather:'Clima', w:{'':'Ninguno', Sun:'Sol', Rain:'Lluvia', Sand:'Tormenta de arena', Hail:'Granizo', Snow:'Nieve', 'Harsh Sun':'Sol abrasador', 'Heavy Rain':'Lluvia intensa'},
+    weather:'Clima', w:{'':'Ninguno', Sun:'Sol', Rain:'Lluvia', Sand:'Tormenta de arena', Hail:'Granizo', Snow:'Nieve', 'Harsh Sun':'Sol abrasador', 'Heavy Rain':'Lluvia intensa', 'Strong Winds':'Fuertes vientos'},
     p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Intercambiar', search:'Buscar Pokémon…', level:'Nivel', nature:'Naturaleza', ability:'Habilidad', abOn:'Habilidad activa', item:'Objeto', noItem:'Sin objeto',
     status:'Estado', st:{'':'Sano', brn:'Quemado', par:'Paralizado', psn:'Envenenado', tox:'Gravemente envenenado', slp:'Dormido', frz:'Congelado'}, hp:'PS actuales (%)',
     stats:['PS','Ataque','Defensa','At. Esp.','Def. Esp.','Velocidad'], special:'Especial', base:'Base', iv:'IV', dv:'DV', ev:'EV', se:'Exp.', total:'Total', stage:'Niv.',
@@ -56,12 +57,12 @@ const I = {
     gender:'Género', gen_:{'':'—', M:'♂ Macho', F:'♀ Hembra'}, tera:'Teracristal', noTera:'— Sin teracristalizar —', dmax:'Dynamax', zm:'Z', zTip:'Movimiento Z',
     preset:'Preset', presetPick:'— Elegir preset —', gSmogon:'Sets de Smogon', gGeneric:'Genéricos', gMine:'Mis presets', save:'Guardar', del:'Borrar',
     saveAsk:'Nombre del preset:', delAsk:'¿Borrar este preset?', saveTip:'Guarda la configuración actual de este Pokémon como preset', delTip:'Borra el preset guardado seleccionado',
-    terrain:'Terreno', ter:{'':'Ninguno', Electric:'Eléctrico', Grassy:'Hierba', Misty:'Niebla', Psychic:'Psíquico'}, maxTag:'Movimiento Max', zTag:'Movimiento Z',
+    terrain:'Terreno', fxT:'Efectos', gfxT:'Campo', fxn:{tailwind:'Viento Afín', veil:'Velo Aurora', friendGuard:'Compañía (Friend Guard)', helpingHand:'Refuerzo', battery:'Batería', powerSpot:'Fuente de Poder', steelySpirit:'Espíritu Acerado', charge:'Carga'}, gfxn:{doubles:'Dobles', gravity:'Gravedad', mudSport:'Chapoteo Lodo', waterSport:'Hidrochorro', fairyAura:'Aura Feérica', darkAura:'Aura Oscura', auraBreak:'Rompeaura', sword:'Espada Ruina', beads:'Abalorios Ruina', tablets:'Tablilla Ruina', vessel:'Vasija Ruina'}, stellar:'Astral', ter:{'':'Ninguno', Electric:'Eléctrico', Grassy:'Hierba', Misty:'Niebla', Psychic:'Psíquico'}, maxTag:'Movimiento Max', zTag:'Movimiento Z',
     gp:{neutral:'Sin inversión (0 EV, naturaleza neutra)', physFast:'Físico rápido (Alegre, 252 Atq/Vel)', physPow:'Físico potente (Firme, 252 Atq/Vel)', specFast:'Especial rápido (Miedosa, 252 AtE/Vel)', specPow:'Especial potente (Modesta, 252 AtE/Vel)', physWall:'Muro físico (Osada, 252 PS/Def)', specWall:'Muro especial (Serena, 252 PS/DefE)', max:'Máximo (252 EV en Atq/AtE/Vel…)'}
   },
   en: {
     title:'Damage Calculator', gen:'Generation', rnd:'Randomlocke', rndOn:'Randomlocke on: any ability and any move of the generation can be chosen', rndOff:'Randomlocke off: only abilities and moves the Pokémon can have',
-    weather:'Weather', w:{'':'None', Sun:'Sun', Rain:'Rain', Sand:'Sandstorm', Hail:'Hail', Snow:'Snow', 'Harsh Sun':'Harsh Sunlight', 'Heavy Rain':'Heavy Rain'},
+    weather:'Weather', w:{'':'None', Sun:'Sun', Rain:'Rain', Sand:'Sandstorm', Hail:'Hail', Snow:'Snow', 'Harsh Sun':'Harsh Sunlight', 'Heavy Rain':'Heavy Rain', 'Strong Winds':'Strong Winds'},
     p1:'Pokémon 1', p2:'Pokémon 2', swap:'⇄ Swap', search:'Search Pokémon…', level:'Level', nature:'Nature', ability:'Ability', abOn:'Ability active', item:'Item', noItem:'No item',
     status:'Status', st:{'':'Healthy', brn:'Burned', par:'Paralyzed', psn:'Poisoned', tox:'Badly poisoned', slp:'Asleep', frz:'Frozen'}, hp:'Current HP (%)',
     stats:['HP','Attack','Defense','Sp. Atk','Sp. Def','Speed'], special:'Special', base:'Base', iv:'IV', dv:'DV', ev:'EV', se:'Exp.', total:'Total', stage:'Stg.',
@@ -74,7 +75,7 @@ const I = {
     gender:'Gender', gen_:{'':'—', M:'♂ Male', F:'♀ Female'}, tera:'Tera Type', noTera:'— Not terastallized —', dmax:'Dynamax', zm:'Z', zTip:'Z-Move',
     preset:'Preset', presetPick:'— Pick preset —', gSmogon:'Smogon sets', gGeneric:'Generic', gMine:'My presets', save:'Save', del:'Delete',
     saveAsk:'Preset name:', delAsk:'Delete this preset?', saveTip:'Save this Pokémon\'s current setup as a preset', delTip:'Delete the selected saved preset',
-    terrain:'Terrain', ter:{'':'None', Electric:'Electric', Grassy:'Grassy', Misty:'Misty', Psychic:'Psychic'}, maxTag:'Max Move', zTag:'Z-Move',
+    terrain:'Terrain', fxT:'Effects', gfxT:'Field', fxn:{tailwind:'Tailwind', veil:'Aurora Veil', friendGuard:'Friend Guard', helpingHand:'Helping Hand', battery:'Battery', powerSpot:'Power Spot', steelySpirit:'Steely Spirit', charge:'Charge'}, gfxn:{doubles:'Doubles', gravity:'Gravity', mudSport:'Mud Sport', waterSport:'Water Sport', fairyAura:'Fairy Aura', darkAura:'Dark Aura', auraBreak:'Aura Break', sword:'Sword of Ruin', beads:'Beads of Ruin', tablets:'Tablets of Ruin', vessel:'Vessel of Ruin'}, stellar:'Stellar', ter:{'':'None', Electric:'Electric', Grassy:'Grassy', Misty:'Misty', Psychic:'Psychic'}, maxTag:'Max Move', zTag:'Z-Move',
     gp:{neutral:'No investment (0 EVs, neutral nature)', physFast:'Fast physical (Jolly, 252 Atk/Spe)', physPow:'Strong physical (Adamant, 252 Atk/Spe)', specFast:'Fast special (Timid, 252 SpA/Spe)', specPow:'Strong special (Modest, 252 SpA/Spe)', physWall:'Physical wall (Bold, 252 HP/Def)', specWall:'Special wall (Calm, 252 HP/SpD)', max:'Maxed (252 EVs in Atk/SpA/Spe…)'}
   }
 };
@@ -195,7 +196,9 @@ function finalStats(side) {
 const monOf = side => {
   const sp = G.SP[side.sp], stats = finalStats(side);
   if (stats && S.gen === 8 && side.dmax) stats[0] *= 2;      // Dynamax duplica los PS
-  return {gender:S.gen >= 2 ? side.gender : '', tera:S.gen >= 9 ? side.tera : '', sp, lvl:side.lvl, stats, stages:side.stages, ab:side.ab, abOn:side.abOn, item:side.item, status:side.status, hpPct:side.hpPct, reflect:side.reflect, lscreen:side.lscreen};
+  const m = {gender:S.gen >= 2 ? side.gender : '', tera:S.gen >= 9 ? side.tera : '', sp, lvl:side.lvl, stats, stages:side.stages, ab:side.ab, abOn:side.abOn, item:side.item, status:side.status, hpPct:side.hpPct, reflect:side.reflect, lscreen:side.lscreen, evo:!!(typeof EVO_PRE !== 'undefined' && sp && sp.num && EVO_PRE[sp.num]), spe:speedOf(side)};
+  Object.keys(side.fx || {}).forEach(k => { if (side.fx[k]) m[k] = true; });
+  return m;
 };
 const FIXED_HITS = {'Double Kick':2, 'Dual Chop':2, 'Bonemerang':2, 'Double Hit':2, 'Gear Grind':2, 'Twineedle':2, 'Dual Wingbeat':2, 'Double Iron Bash':2, 'Surging Strikes':3};
 
@@ -281,6 +284,8 @@ function buildSide(idx) {
 
   const scr = el('div', {class:'screens'}, el('span', {class:'sclbl'}), el('label', {class:'chk small'}, chkRef, el('span', {class:'t1'})), el('label', {class:'chk small'}, chkLs, el('span', {class:'t2'})));
   const speedLine = el('div', {class:'speed'});
+  const fxChk = {};
+  FX.forEach(([k, g]) => { const c = el('input', {type:'checkbox'}); fxChk[k] = c; const lb = el('label', {class:'chk small', 'data-g':g}, c, el('span')); scr.append(lb); c.onchange = () => { side().fx[k] = c.checked; save(); refreshAll(); }; });
   const reset = el('button', {type:'button', class:'btn small', text:''});
   const mh = el('h3', {text:''});
   const presets = el('div', {class:'presets'}, selPre, bSave, bDel);
@@ -316,7 +321,7 @@ function buildSide(idx) {
   chkLs.onchange = () => { side().lscreen = chkLs.checked; save(); refresh(); };
   reset.onclick = () => { const sp = side().sp; S.sides[idx] = Object.assign(blankSide(), {sp}); save(); refreshAll(); };
 
-  const o = {selGen, selTera, chkDmax, selPre, bSave, bDel, idx, root, title, sprite, types, inSp, inLvl, selNat, inAb, chkAb, inItem, selSt, inHp, chkRef, chkLs, rows, mrows, lbls, head, scr, reset, mh, speedLine};
+  const o = {selGen, selTera, chkDmax, selPre, bSave, bDel, idx, root, title, sprite, types, inSp, inLvl, selNat, inAb, chkAb, inItem, selSt, inHp, chkRef, chkLs, fxChk, rows, mrows, lbls, head, scr, reset, mh, speedLine};
   sides.push(o);
   return o;
 }
@@ -415,7 +420,7 @@ function deleteUserPreset(idx) {
   if (!target || !confirm(t('delAsk') + '\n' + (target.sp ? target.sp + ' · ' : '') + target.name)) return;
   o.lastUser = null; saveUserPresets(l.filter(p => p.id !== target.id)); sides.forEach(fillPresets);
 }
-const TERAS = ['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
+const TERAS = ['Stellar','Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
 
 /* ---------- Pintado ---------- */
 function paintSprite(o) {
@@ -426,7 +431,9 @@ function paintSprite(o) {
   const img = el('img', {alt:sp.n, src:urls[0]}); let n = 0;
   img.onerror = () => { if (++n < urls.length) img.src = urls[n]; else img.style.visibility = 'hidden'; };
   o.sprite.append(img);
-  const ts = S.gen >= 9 && S.sides[o.idx].tera ? [S.sides[o.idx].tera] : sp.t;
+  const tr0 = S.gen >= 9 ? S.sides[o.idx].tera : '';
+  if (tr0 === 'Stellar') { sp.t.forEach(x => { const c = el('span', {class:'type', text:tt(x)}); c.style.background = TYPE_COLORS[x] || '#666'; o.types.append(c); }); const c = el('span', {class:'type', text:'◆ ' + t('stellar')}); c.style.background = 'linear-gradient(90deg,#e8622c,#e8b90c,#4fae3d,#3a8de0,#a350cc)'; o.types.append(c); }
+  const ts = tr0 && tr0 !== 'Stellar' ? [tr0] : tr0 ? [] : sp.t;
   ts.forEach(x => { const c = el('span', {class:'type', text:(ts !== sp.t ? '◆ ' : '') + tt(x)}); c.style.background = TYPE_COLORS[x] || '#666'; o.types.append(c); });
 }
 const fmtPct = (x, hp) => (x * 100 / hp).toFixed(1).replace(/\.0$/, '');
@@ -459,7 +466,7 @@ function renderOne(o) {
       if (S.gen === 7 && m.z) { mvo = Object.assign(mvo, {n:'', bp:E.zPower(bp), hits:1}); tag = 'zTag'; }
       else if (S.gen === 8 && atk.dmax) { mvo = Object.assign(mvo, {n:'', bp:E.maxPower(bp, mdata[1]), hits:1}); tag = 'maxTag'; }
     }
-    const out = E.calc(S.gen, A, D, mvo, {weather:S.weather, terrain:S.terrain});
+    const out = E.calc(S.gen, A, D, mvo, {weather:S.weather, terrain:S.terrain, ...S.fx});
     if (!out) { r.res.textContent = mdata[2] === 'T' ? '' : t('noDmg'); r.res.classList.add('none'); return; }
     const rolls = out.rolls, hp = D.stats[0], curHP = Math.max(1, Math.round(hp * D.hpPct / 100)), mn = rolls[0], mx = rolls[rolls.length - 1];
     if (mx <= 0) { r.res.textContent = t('immune') + (out.notes[0] && out.notes[0].includes(':') ? ' (' + (out.notes[0].startsWith('ab:') ? tr('a', out.notes[0].slice(3)) : tr('i', out.notes[0].slice(5))) + ')' : ''); r.res.classList.add('none'); return; }
@@ -480,6 +487,7 @@ function speedOf(side) {
   let v = Math.floor(st[5] * E.stageMul(S.gen, side.stages[4]));
   if (side.status === 'par') v = Math.floor(v * (S.gen >= 7 ? 0.5 : 0.25));
   if (side.item === 'Choice Scarf') v = Math.floor(v * 1.5);
+  if (S.gen >= 4 && side.fx && side.fx.tailwind) v *= 2;
   if (side.item === 'Iron Ball' || side.item === 'Macho Brace') v = Math.floor(v * 0.5);
   if (hasAb() && ((side.ab === 'Swift Swim' && S.weather === 'Rain') || (side.ab === 'Chlorophyll' && S.weather === 'Sun') || (side.ab === 'Sand Rush' && S.weather === 'Sand') || (side.ab === 'Slush Rush' && (S.weather === 'Hail' || S.weather === 'Snow')))) v *= 2;
   return v;
@@ -513,9 +521,10 @@ function paintValues(o) {
   G.natures.forEach(([n, p, m]) => { if (p) o.selNat.append(el('option', {value:n, text:`${trNat(n)} (+${sn(p)} −${sn(m)})`})); });
   o.selNat.value = hasNat() ? side.nat : '';
   o.selSt.replaceChildren(...Object.entries(t('st')).map(([k, v]) => el('option', {value:k, text:v}))); o.selSt.value = side.status;
+  FX.forEach(([k, g]) => { const c = o.fxChk[k]; c.checked = !!(side.fx && side.fx[k]); c.parentElement.hidden = S.gen < g; c.nextSibling.textContent = t('fxn')[k]; });
   o.chkRef.checked = side.reflect; o.chkLs.checked = side.lscreen;
   o.selGen.replaceChildren(...Object.entries(t('gen_')).map(([k, v]) => el('option', {value:k, text:v}))); o.selGen.value = side.gender; o.selGen.disabled = S.gen < 2;
-  o.selTera.replaceChildren(el('option', {value:'', text:t('noTera')}), ...TERAS.map(x => el('option', {value:x, text:tt(x)}))); o.selTera.value = side.tera;
+  o.selTera.replaceChildren(el('option', {value:'', text:t('noTera')}), ...TERAS.map(x => el('option', {value:x, text:x === 'Stellar' ? t('stellar') : tt(x)}))); o.selTera.value = side.tera;
   o.selTera.parentElement.hidden = S.gen < 9;
   o.chkDmax.checked = side.dmax; o.chkDmax.parentElement.parentElement.hidden = S.gen !== 8;
   fillPresets(o);
@@ -589,7 +598,7 @@ function setGen(g, reset) {
   $('foot').textContent = t('foot')(S.gen, G.species.length, G.moves.length);
 }
 function fillWeather() {
-  const ws = ['']; if (S.gen >= 2) ws.push('Sun', 'Rain'); if (S.gen >= 3) ws.push('Sand', 'Hail'); if (S.gen >= 9) ws.push('Snow'); if (S.gen >= 6) ws.push('Harsh Sun', 'Heavy Rain');
+  const ws = ['']; if (S.gen >= 2) ws.push('Sun', 'Rain'); if (S.gen >= 3) ws.push('Sand', 'Hail'); if (S.gen >= 9) ws.push('Snow'); if (S.gen >= 6) ws.push('Harsh Sun', 'Heavy Rain', 'Strong Winds');
   const sel = $('weather'); sel.replaceChildren(...ws.map(k => el('option', {value:k, text:t('w')[k]}))); sel.value = ws.includes(S.weather) ? S.weather : '';
   S.weather = sel.value;
   $('weather').disabled = S.gen < 2;
@@ -597,7 +606,12 @@ function fillWeather() {
   const tsel = $('terrain'); tsel.replaceChildren(...ts.map(k => el('option', {value:k, text:t('ter')[k]}))); tsel.value = ts.includes(S.terrain) ? S.terrain : '';
   S.terrain = tsel.value; tsel.disabled = S.gen < 6;
 }
+function paintGfx() {
+  GFX.forEach(([k, g]) => { const c = $('g_' + k); c.checked = !!S.fx[k]; c.parentElement.hidden = S.gen < g; c.nextSibling.textContent = t('gfxn')[k]; });
+  $('gfxT').textContent = t('gfxT');
+}
 function paintHeader() {
+  paintGfx();
   document.documentElement.lang = lang; $('lang').value = lang;
   document.querySelector('h1').firstChild.textContent = lang === 'es' ? 'Calculadora de ' : 'Damage ';
   document.querySelector('h1 span').textContent = lang === 'es' ? 'daño' : 'Calculator';
@@ -616,6 +630,7 @@ function paintHeader() {
   // línea de velocidad entre ambos (debajo del campo)
   gs.onchange = () => { setGen(+gs.value); refreshAll(); paintHeader(); };
   $('weather').onchange = () => { S.weather = $('weather').value; save(); refresh(); };
+  { const box = $('gfx'); box.replaceChildren(); GFX.forEach(([k, g]) => { const c = el('input', {type:'checkbox', id:'g_' + k}); c.onchange = () => { S.fx[k] = c.checked; save(); refreshAll(); }; box.append(el('label', {class:'chk small', 'data-g':g}, c, el('span'))); }); }
   $('terrain').onchange = () => { S.terrain = $('terrain').value; save(); refresh(); };
   $('rnd').onclick = () => { S.random = !S.random; PMRandom.set(S.random); sanitize(); save(); refreshAll(); paintHeader(); };
   PMRandom.onChange(v => { S.random = v; sanitize(); save(); refreshAll(); paintHeader(); });

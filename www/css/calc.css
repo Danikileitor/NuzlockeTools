@@ -64,3 +64,8 @@
 .presel{flex:1;min-width:0}
 .tag{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;background:linear-gradient(135deg,#7b2ff7,#f107a3);color:#fff;border-radius:5px;padding:1px 6px;margin-right:6px}
 .zl{white-space:nowrap}
+
+.gfx{margin:0 0 14px;background:var(--panel,transparent);border:1px solid var(--line,#3334);border-radius:10px;padding:8px 12px}
+.gfx summary{cursor:pointer;font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.gfx .screens{margin-top:8px}
+.screens .chk[hidden]{display:none}
