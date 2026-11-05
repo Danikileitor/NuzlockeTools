@@ -36,6 +36,8 @@ const PokeModel = (() => {
   const HIDE = {914:/gel_mesh/};   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
   const TPOSE = new Set([97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
+  // Gholdengo (1000): en la serie 0xxxx su cuerpo flota separado de la tabla; en la 1xxxx va sobre ella
+  const CLIP_OVERRIDE = {1000:{idle:/_10000_defaultwait01_loop/, hover:/_10400_attack01/, win:/_10300_roar01/}};
   const LAT_X = new Set([612,190,505,539,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
   function dropArms(scene, deg, pid) {
     scene.updateMatrixWorld(true);
@@ -121,9 +123,16 @@ const PokeModel = (() => {
     if (clips.length) {
       mixer = new THREE.AnimationMixer(g.scene);
       const find = re => clips.find(c => re.test(c.name)), act = c => c && mixer.clipAction(c);
+      const ov = CLIP_OVERRIDE[pid];     // modelos con varias series de animaciones: elegir la que mantiene las piezas unidas
+      if (ov) {
+        acts = {idle:act(find(ov.idle)) || null, hover:act(find(ov.hover || ov.idle)), win:act(find(ov.win || ov.hover || ov.idle))};
+        if (acts.idle) { acts.idle.play(); mixer.update(0); } else acts = null;
+      }
+      if (!acts) {
       const idle = find(/defaultwait01_loop|aidle|wait.*loop|idle|idol|stand|wait|base layer|armatureaction|^animation$|take 001/i) || clips[0];
       acts = {idle:act(idle), hover:act(find(/glad|happy|jump_s|fight_b|attack01|attack/i)), win:act(find(/glad|happy|jump_e|roar|attack01|attack|fight_d/i))};
       acts.idle.play(); mixer.update(0);
+      }
     } else { arms = lowerArms(g.scene); if (!arms.length && TPOSE.has(pid)) arms = [dropArms(g.scene, undefined, pid) ? 'malla' : 'no']; }
     let m = measure(wrap), size = m.rob.getSize(new THREE.Vector3()), fs = m.full.getSize(new THREE.Vector3());
     const raw = fs.toArray().map(x => +x.toFixed(3));
