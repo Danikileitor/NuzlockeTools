@@ -111,7 +111,7 @@ const BattleSim = (() => {
   }
 
   async function loadModel(side) {
-    const url = PokeModel.modelUrl(side.num);
+    const url = PokeModel.modelUrl(side.num, side.name);
     if (url) {
       try {
         const g = await new Promise((res, rej) => three.gltf.load(url, res, undefined, rej));

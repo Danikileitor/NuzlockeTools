@@ -33,9 +33,9 @@ const PokeModel = (() => {
     return report;
   }
 
-  const HIDE = {914:/gel_mesh/};   // mallas que en la pose base salen estiradas decenas de veces
+  const HIDE = {914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
-  const TPOSE = new Set([97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
+  const TPOSE = new Set([740,97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
   // Gholdengo (1000): en la serie 0xxxx su cuerpo flota separado de la tabla; en la 1xxxx va sobre ella
   const CLIP_OVERRIDE = {1000:{idle:/_10000_defaultwait01_loop/, hover:/_10400_attack01/, win:/_10300_roar01/}};
   const LAT_X = new Set([612,190,505,539,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
@@ -113,10 +113,14 @@ const PokeModel = (() => {
   function prep(g, pid) {
     const wrap = new THREE.Group(); wrap.add(g.scene);
     // oculta mallas auxiliares: versiones LOD superpuestas y mallas totalmente transparentes
+    let hasMain = false;
+    g.scene.traverse(o => { if (o.isMesh && !/lod[1-9]/i.test(o.name) && !(HIDE[pid] && HIDE[pid].test(o.name))) hasMain = true; });
     g.scene.traverse(o => {
       if (!o.isMesh) return;
       const ms = Array.isArray(o.material) ? o.material : [o.material];
-      if (/lod[1-9]/i.test(o.name) || (HIDE[pid] && HIDE[pid].test(o.name)) || ms.every(m => m.transparent && m.opacity === 0)) o.visible = false;
+      // metalness 1 sin mapa de entorno deja el modelo casi negro
+      ms.forEach(m => { if (m && m.metalness > 0.3) m.metalness = 0.1; });
+      if ((hasMain && /lod[1-9]/i.test(o.name)) || (HIDE[pid] && HIDE[pid].test(o.name)) || ms.every(m => m.transparent && m.opacity === 0)) o.visible = false;
     });
     const clips = (g.animations || []).filter(c => !/eye|mouth|blink/i.test(c.name));
     let mixer = null, acts = null, arms = [];
@@ -143,6 +147,7 @@ const PokeModel = (() => {
     g.scene.position.sub(box.getCenter(new THREE.Vector3()));
     const dims = box.getSize(new THREE.Vector3());
     wrap.userData.half = dims.y / 2;   // para apoyarlo justo sobre la Poké Ball
+    if (pid === 802) wrap.traverse(o => { if (o.isMesh && o.name === 'Object_39') o.visible = false; });   // mancha negra plana (ya medida)
     // la esfera de recorte de un modelo con esqueleto usa la pose base (muy distinta): sin esto partes como los ojos desaparecen
     wrap.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
     return {obj:wrap, mixer, acts, info:{clips:clips.length, arms, raw, dims:dims.toArray().map(x => +x.toFixed(2))}};
@@ -150,6 +155,9 @@ const PokeModel = (() => {
   const MODEL_BASE = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/';
   const NO_3D = new Set([850,851,852,853,854,859,860,861,863,864,866,868,873,878,879,882,883,918,919,931,935,936,938,939,940,944,950,951,952,953,954,955,956,961,963,964,968,969,970,971,972,976,977,986,988,989,991,992,993,1011,1012,1013,1022,1024]);
   const GENDER = new Set([521, 668, 916]);   // solo existen como -M / -F
-  const modelUrl = p => (p >= 10000 || NO_3D.has(p)) ? null : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
+  const MODEL_ROOT = MODEL_BASE.replace('regular/', '');
+  // Zygarde: el modelo "regular" es solo una Célula; las formas reales están en multiform / mega
+  const zygarde = name => /mega/i.test(name || '') ? 'mega/718' : /10/.test(name || '') ? 'multiform/718_1' : /complete/i.test(name || '') ? 'multiform/718_3' : 'multiform/718_2';
+  const modelUrl = (p, name) => (p >= 10000 || NO_3D.has(p)) ? null : p === 718 ? MODEL_ROOT + zygarde(name) + '.glb' : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
   return {prep, measure, TPOSE, modelUrl};
 })();
