@@ -39,6 +39,7 @@ const PokeModel = (() => {
   // Gholdengo (1000): en la serie 0xxxx su cuerpo flota separado de la tabla; en la 1xxxx va sobre ella
   const CLIP_OVERRIDE = {1000:{idle:/_10000_defaultwait01_loop/, hover:/_10400_attack01/, win:/_10300_roar01/}};
   const LAT_X = new Set([612,190,505,539,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
+  const FWD = new Set([740]);   // Crabominable: brazos hacia delante, como su sprite
   function dropArms(scene, deg, pid) {
     scene.updateMatrixWorld(true);
     const meshes = []; scene.traverse(o => { if (o.isMesh && !o.isSkinnedMesh && o.visible) meshes.push(o); });
@@ -51,7 +52,9 @@ const PokeModel = (() => {
     let sy = 0, sn = 0;
     each(p => { if (Math.abs(p.getComponent(LA) - cx) > 0.8 * S) { sy += p.y; sn++; } });   // altura de las manos
     if (!sn) return false;
-    const ys = sy / sn, xs = 0.3 * S, th = (deg || 70) * Math.PI / 180, band = 0.2 * H;
+    const FW = FWD.has(pid), DA = LA === 0 ? 2 : 0;   // FW: los brazos giran hacia delante (+Z) en vez de hacia abajo
+    let sd = 0; if (FW) each(p => { if (Math.abs(p.getComponent(LA) - cx) > 0.8 * S) sd += p.getComponent(DA); }); sd = FW ? sd / sn : 0;
+    const ys = sy / sn, xs = 0.3 * S, th = (deg || (FW ? 85 : 70)) * Math.PI / 180, band = 0.2 * H;
     const sm = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
     const inv = new THREE.Matrix4(), nm = new THREE.Matrix3(), n = new THREE.Vector3();
     for (const m of meshes) {
@@ -65,12 +68,14 @@ const PokeModel = (() => {
         const w = sm(xs, xs + 0.15 * S, ax) * (1 - sm(band, band * 1.7, Math.abs(dy)));
         if (w <= 0) continue;
         const a = th * w, c = Math.cos(a), s2 = Math.sin(a), px = ax - xs;
-        v.setComponent(LA, cx + side * (xs + px * c + dy * s2)); v.y = ys - px * s2 + dy * c;   // gira hacia abajo respecto al hombro
+        if (FW) { const dz = v.getComponent(DA) - sd; v.setComponent(LA, cx + side * (xs + px * c - dz * s2)); v.setComponent(DA, sd + px * s2 + dz * c); }
+        else { v.setComponent(LA, cx + side * (xs + px * c + dy * s2)); v.y = ys - px * s2 + dy * c; }   // gira hacia abajo respecto al hombro
         v.applyMatrix4(inv); pos.setXYZ(k, v.x, v.y, v.z);
         if (nor) {
           n.fromBufferAttribute(nor, k).applyMatrix3(nm);
           const nl = n.getComponent(LA) * side;
-          n.setComponent(LA, (nl * c + n.y * s2) * side); n.y = -nl * s2 + n.y * c;
+          if (FW) { const nd = n.getComponent(DA); n.setComponent(LA, (nl * c - nd * s2) * side); n.setComponent(DA, nl * s2 + nd * c); }
+          else { n.setComponent(LA, (nl * c + n.y * s2) * side); n.y = -nl * s2 + n.y * c; }
           n.applyMatrix3(nInv).normalize(); nor.setXYZ(k, n.x, n.y, n.z);
         }
       }
@@ -158,6 +163,7 @@ const PokeModel = (() => {
   const MODEL_ROOT = MODEL_BASE.replace('regular/', '');
   // Zygarde: el modelo "regular" es solo una Célula; las formas reales están en multiform / mega
   const zygarde = name => /mega/i.test(name || '') ? 'mega/718' : /10/.test(name || '') ? 'multiform/718_1' : /complete/i.test(name || '') ? 'multiform/718_3' : 'multiform/718_2';
-  const modelUrl = (p, name) => (p >= 10000 || NO_3D.has(p)) ? null : p === 718 ? MODEL_ROOT + zygarde(name) + '.glb' : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
+  const FORM_MODEL = {10118: 'multiform/718_1', 10120: 'multiform/718_3'};   // Zygarde 10% / Completo (ids de formas de PokeAPI)
+  const modelUrl = (p, name) => FORM_MODEL[p] ? MODEL_ROOT + FORM_MODEL[p] + '.glb' : (p >= 10000 || NO_3D.has(p)) ? null : p === 718 ? MODEL_ROOT + zygarde(name) + '.glb' : MODEL_BASE + p + (GENDER.has(p) ? '-M' : '') + '.glb';
   return {prep, measure, TPOSE, modelUrl};
 })();

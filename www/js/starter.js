@@ -52,7 +52,9 @@ const front = p => `https://raw.githubusercontent.com/PokeAPI/sprites/master/spr
 
 /* ---------- Reglas de generación ---------- */
 const game = () => GM[prefs.game];
-const species = () => game().dex.filter(p => p < 10000);
+const ZYG_FORMS = new Set([10118, 10120]);   // Zygarde 10% y Completo: las únicas formas que cuentan como Pokémon aparte
+const dexNum = p => ZYG_FORMS.has(p) ? 718 : p;
+const species = () => game().dex.filter(p => p < 10000 || ZYG_FORMS.has(p));
 function evo2Pool() {
   const inDex = new Set(species());
   const kids = {};
@@ -86,7 +88,7 @@ function combo(idx) {
     list.slice(0, 400).forEach((p, i) => {
       const img = el('img', {src:front(p), alt:'', loading:'lazy'}); img.onerror = () => { img.style.visibility = 'hidden'; };
       const isSel = p === prefs.custom[idx];
-      const row = el('div', {class: (i === act ? 'act' : '') + (isSel ? ' sel' : '')}, el('span', {}, img, el('span', {text:(isSel ? '✓ ' : '') + pn(p)})), el('small', {text:'#' + (p < 10000 ? p : '')}));
+      const row = el('div', {class: (i === act ? 'act' : '') + (isSel ? ' sel' : '')}, el('span', {}, img, el('span', {text:(isSel ? '✓ ' : '') + pn(p)})), el('small', {text:'#' + (ZYG_FORMS.has(p) ? 718 : p < 10000 ? p : '')}));
       const pick = e => { e.preventDefault(); choose(p); };
       row.addEventListener('mousedown', e => e.preventDefault());   // evita que el input pierda el foco antes de elegir
       row.addEventListener('pointerdown', pick);
@@ -309,7 +311,7 @@ function createStage() {
   function relabel() {
     slots.forEach((s, i) => {
       const l = lblEls[i];
-      if (s.pid) { l.firstChild.textContent = pn(s.pid); l.lastChild.textContent = '#' + s.pid; }
+      if (s.pid) { l.firstChild.textContent = pn(s.pid); l.lastChild.textContent = '#' + dexNum(s.pid); }
     });
   }
 
@@ -406,7 +408,7 @@ function createStage() {
       const l = lblEls[i];
       l.style.left = ((v3.x + 1) / 2 * cv.clientWidth) + 'px'; l.style.top = ((1 - v3.y) / 2 * cv.clientHeight) + 'px';
       if (s.pid && s.prog > 0.6 && state !== 'loading') {
-        if (!l.dataset.pid || +l.dataset.pid !== s.pid) { l.dataset.pid = s.pid; l.firstChild.textContent = pn(s.pid); l.lastChild.textContent = '#' + s.pid; }
+        if (!l.dataset.pid || +l.dataset.pid !== s.pid) { l.dataset.pid = s.pid; l.firstChild.textContent = pn(s.pid); l.lastChild.textContent = '#' + dexNum(s.pid); }
         l.classList.toggle('off', state === 'chosen' && chosen !== i);
         l.classList.toggle('hover', hoverIdx === i && state === 'reveal');
       }

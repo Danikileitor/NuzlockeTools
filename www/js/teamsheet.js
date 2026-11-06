@@ -156,7 +156,8 @@ const moveOptsFor = idx => {
   return sortEs(out);
 };
 
-const spriteUrls = id => [
+const LOCAL_SPRITES = {'zygarde-mega':'sprites/zygarde-mega.png'};   // sin sprite en Showdown: generado desde el modelo 3D
+const spriteUrls = id => LOCAL_SPRITES[id] ? [LOCAL_SPRITES[id], LOCAL_SPRITES[id], LOCAL_SPRITES[id]] : [
   `https://play.pokemonshowdown.com/sprites/ani/${id}.gif`,
   `https://play.pokemonshowdown.com/sprites/dex/${id}.png`,
   `https://play.pokemonshowdown.com/sprites/gen5/${id}.png`

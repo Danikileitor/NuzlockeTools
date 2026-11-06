@@ -85,7 +85,8 @@ const I = {
 const t = k => I[lang][k];
 
 /* ---------- Datos de la generación ---------- */
-const spriteUrls = id => [`https://play.pokemonshowdown.com/sprites/ani/${id}.gif`, `https://play.pokemonshowdown.com/sprites/dex/${id}.png`, `https://play.pokemonshowdown.com/sprites/gen5/${id}.png`];
+const LOCAL_SPRITES = {'zygarde-mega':'sprites/zygarde-mega.png'};   // sin sprite en Showdown: generado desde el modelo 3D
+const spriteUrls = id => LOCAL_SPRITES[id] ? [LOCAL_SPRITES[id], LOCAL_SPRITES[id], LOCAL_SPRITES[id]] : [`https://play.pokemonshowdown.com/sprites/ani/${id}.gif`, `https://play.pokemonshowdown.com/sprites/dex/${id}.png`, `https://play.pokemonshowdown.com/sprites/gen5/${id}.png`];
 let G = null;   // datos de la gen actual
 function loadGen(g) {
   const d = GENS[g], MV = Object.fromEntries(d.moves.map(m => [m[0], m]));
