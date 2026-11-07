@@ -213,6 +213,16 @@ const PokeModel = (() => {
     [['Spine1',80],['Spine2',95],['Spine3',105],['Spine4',100],['Spine5',80],['Neck',10],['Head',-15],['UpperBeak',0]]
   ]};
   const CURL = {10:[55],13:[55],23:[140,'coil'],24:[130,'coil'],147:[150,'coil'],148:[150,'coil'],843:[220,'coil']};
+  // Mallas con una parte desmesuradamente larga (p. ej. la espiral de Burmy): comprime las coordenadas locales de eje y por debajo de t con el factor k
+  const SQUASH = {412: {t: -1.9, k: 0.11, r: 0.3}};
+  function squash(root, c) {
+    root.traverse(o => {
+      if (!o.isMesh || o.geometry.attributes.position.count < 1000) return;
+      const pa = o.geometry.attributes.position;
+      for (let i = 0; i < pa.count; i++) { const y = pa.getY(i); if (y < c.t) { const f = 1 + (c.r - 1) * Math.min(1, (c.t - y) / 0.8); pa.setY(i, c.t + (y - c.t) * c.k); pa.setX(i, pa.getX(i) * f); pa.setZ(i, pa.getZ(i) * f); } }
+      pa.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
+    });
+  }
   const ROTY = {539: -Math.PI / 2};
   const FAT = {10:1.5,13:1.5,23:2,24:2,147:2,148:2,336:1,384:1.6,130:1.5,350:1.8,497:1.6,603:1.7,843:2};   // ensancha el cuerpo (X/Z): los modelos son demasiado delgados
   // Los modelos sin animación llegan en T-pose: baja los brazos (rota el hueso del brazo hacia abajo)
@@ -371,6 +381,7 @@ const PokeModel = (() => {
     if (pid === 336 && !g.scene.userData.inflated) { inflate(g.scene, 5, 60, 105); g.scene.userData.inflated = true; }
     if (SHAPE_S[pid]) SHAPE[pid] = SHAPE_S[pid];
     if (!clips.length && SHAPE[pid]) shapeBones(g.scene, SHAPE[pid], SHAPE_EXTRA[pid]);
+    if (SQUASH[pid] && !clips.length) squash(g.scene, SQUASH[pid]);
     if (!clips.length && FAT[pid]) g.scene.scale.set(FAT[pid], 1, FAT[pid]);
     if (ROTY[pid]) g.scene.rotation.y += ROTY[pid];   // modelos que miran hacia el lado en vez de hacia delante
     let m = measure(wrap), size = m.rob.getSize(new THREE.Vector3()), fs = m.full.getSize(new THREE.Vector3());
