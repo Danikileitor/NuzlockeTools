@@ -67,10 +67,53 @@ const PokeModel = (() => {
       sw.needsUpdate = true;
     });
   }
+  // Engorda el cuerpo hinchando los vértices a lo largo de su normal; d en unidades de la malla, con fade hacia la cabeza (y > y0..y1)
+  function inflate(root, d, y0, y1) {
+    root.traverse(m => {
+      if (!m.isSkinnedMesh) return;
+      const pos = m.geometry.attributes.position, nor = m.geometry.attributes.normal;
+      if (!nor || pos.count < 1000) return;
+      for (let v = 0; v < pos.count; v++) {
+        const y = pos.getY(v), t = Math.min(1, Math.max(0, (y - y0) / (y1 - y0))), k = d * (1 - t * t * (3 - 2 * t));
+        pos.setXYZ(v, pos.getX(v) + nor.getX(v) * k, pos.getY(v) + nor.getY(v) * k, pos.getZ(v) + nor.getZ(v) * k);
+      }
+      pos.needsUpdate = true;
+    });
+  }
+  // Suaviza el skinning a lo largo de una cadena de huesos: cada vértice reparte su peso con los huesos vecinos (1/4, 1/2, 1/4), así las curvas salen redondas sin picos
+  function smoothSkin(root, order, passes) {
+    const GET = ['getX', 'getY', 'getZ', 'getW'], SET = ['setX', 'setY', 'setZ', 'setW'];
+    root.traverse(m => {
+      if (!m.isSkinnedMesh) return;
+      const bones = m.skeleton.bones, idxOf = {};
+      order.forEach((n, k) => { const bi = bones.findIndex(b => b.name === n || b.name.replace(/_\d+$/, '') === n); if (bi >= 0) idxOf[bi] = k; });
+      const chain = order.map(n => bones.findIndex(b => b.name === n || b.name.replace(/_\d+$/, '') === n));
+      const si = m.geometry.attributes.skinIndex, sw = m.geometry.attributes.skinWeight; if (!si || !sw) return;
+      for (let v = 0; v < si.count; v++) {
+        let inf = new Map();
+        for (let j = 0; j < 4; j++) { const w = sw[GET[j]](v); if (w > 0) inf.set(si[GET[j]](v), w); }
+        for (let ps = 0; ps < passes; ps++) {
+          const nx = new Map();
+          inf.forEach((w, bi) => {
+            const k = idxOf[bi];
+            if (k === undefined) { nx.set(bi, (nx.get(bi) || 0) + w); return; }
+            const a = chain[k - 1], c = chain[k + 1];
+            const sp = (b, f) => { if (b !== undefined && b >= 0) nx.set(b, (nx.get(b) || 0) + w * f); else nx.set(bi, (nx.get(bi) || 0) + w * f); };
+            sp(a, 0.25); nx.set(bi, (nx.get(bi) || 0) + w * 0.5); sp(c, 0.25);
+          });
+          inf = nx;
+        }
+        const top = [...inf.entries()].sort((x, y) => y[1] - x[1]).slice(0, 4), tot = top.reduce((x, y) => x + y[1], 0) || 1;
+        for (let j = 0; j < 4; j++) { const e = top[j]; si[SET[j]](v, e ? e[0] : 0); sw[SET[j]](v, e ? e[1] / tot : 0); }
+      }
+      si.needsUpdate = true; sw.needsUpdate = true;
+    });
+  }
   // Reorienta una cadena de huesos para que cada tramo siga un rumbo dado (grados en el plano YZ: 0 = hacia delante +Z, 90 = arriba).
   // cadena = [[nombre, rumbo del tramo hasta el siguiente hueso], ...]; el último hueso solo marca el final.
   function shapeBones(root, chains, extra) {
     root.updateMatrixWorld(true);
+    if (extra && extra.smooth) smoothSkin(root, extra.smooth[0], extra.smooth[1]);
     if (extra && extra.snap) extra.snap.forEach(n => snapBone(root, n, 0.35));
     if (extra && extra.hide) root.traverse(o => { if (o.isBone && extra.hide.includes(o.name)) o.scale.setScalar(0.0001); });   // colapsa los huesos (y su malla) que sobran
     const byName = {}; root.traverse(o => { if (o.isBone) { byName[o.name] = o; byName[o.name.replace(/_\d+$/, '')] = byName[o.name.replace(/_\d+$/, '')] || o; } });   // acepta nombres con sufijo _NN
@@ -145,8 +188,9 @@ const PokeModel = (() => {
   // Gyarados en S: la cola sube al final, el cuerpo empieza a subir tras las aletas inferiores (Tail3), se inclina atrás
   // y tras las aletas superiores (Spine5/Neck) el cuello baja la cabeza. Rumbos en grados (0 = delante, 90 = arriba, 180 = atrás).
   const SHAPE_S = {336:[
-    [['Hips',195],['Tail1',175],['Tail2',155],['Tail3',170],['Tail4',190],['Tail5',205],['Tail6',190],['Tail7',170],['Tail8',155],['Tail9',165],['Tail10',185],['Tail11',200],['Tail12',190],['Tail13',170],['Tail14',145],['Tail15',115],['Tail16',0]],
-    [['Spine1',20],['Spine2',0],['Spine3',-10],['Spine4',0],['Spine5',15],['Spine6',35],['Spine7',55],['Spine8',70],['Spine9',80],['Spine10',85],['Spine11',90],['Spine12',90],['Spine13',90],['Spine14',88],['Neck',88],['Head',85],['EndHead',0]]
+    [['Hips',225],['Tail1',180],['Tail2',180],['Tail3',180],['Tail4',124],['Tail5',92],['Tail6',124],['Tail7',202],['Tail8',280],['Tail9',312],['Tail10',280],['Tail11',202],['Tail12',180],['Tail13',161],['Tail14',124],['Tail15',105],['Tail16',105],['EndTail16',0]],
+    [['Spine1',64],['Spine2',45],['Spine3',0],['Spine4',-60],['Spine5',-85],['Spine6',-60],['Spine7',0],['Spine8',0],['Spine9',0],['Spine10',50],['Spine11',73],['Spine12',74],['Spine13',81],['Spine14',90],['Neck',90],['Head',85],['EndHead',0]],
+    [['Tongue1',-15],['Tongue2',-40],['Tongue3',-65],['Tongue4',-82],['Tongue5',-95],['EndTongue5',0]]
   ],
     497:[
     [['Waist',265],['Tail1',245],['Tail2',215],['Tail3',185],['Tail4',155],['Tail5',125],['Tail6',100],['Tail7',85],['Tail8',80],['Tail9',85],['Tail10',100],['Tail11',120],['Tail12',140],['Tail13',160],['Tail14',175],['Tail15',190],['Tail16',0]],
@@ -154,8 +198,9 @@ const PokeModel = (() => {
     [['LFeelerC1',110],['LFeelerC2',130],['LFeelerC3',150],['LFeelerC4',170],['LFeelerC5',190],['LFeelerC6',205],['LFeelerC7',220],['LFeelerC8',235],['LFeelerC9',245],['LFeelerC10',0]],
     [['RFeelerC1',110],['RFeelerC2',130],['RFeelerC3',150],['RFeelerC4',170],['RFeelerC5',190],['RFeelerC6',205],['RFeelerC7',220],['RFeelerC8',235],['RFeelerC9',245],['RFeelerC10',0]]
   ]};
-  const SHAPE_EXTRA = {384:{stretch:[['Spine2','Neck1','Neck2','Head','Jaw'],1.7], zrot:[['LArm',55],['RArm',-55]], xrot:[['Jaw',30,'Head',0.48,0.91]], snap:['Jaw']}, 497:{hide:['LFeelerC1','RFeelerC1','LFeelerA1','RFeelerA1']}};
-  const SHAPE = {384:[
+  const SHAPE_EXTRA = {123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
+    384:{stretch:[['Spine2','Neck1','Neck2','Head','Jaw'],1.7], zrot:[['LArm',55],['RArm',-55]], xrot:[['Jaw',30,'Head',0.48,0.91]], snap:['Jaw']}, 497:{hide:['LFeelerC1','RFeelerC1','LFeelerA1','RFeelerA1']}};
+  const SHAPE = {123:[], 428:[], 384:[
     [['Hips',270],['Tail1',235],['Tail2',200],['Tail3',165],['Tail4',130],['Tail5',100],['Tail6',85],['Tail7',85],['Tail8',100],['Tail9',130],['Tail10',165],['Tail11',200],['Tail12',225],['Tail13',245],['Tail14',255],['Tail15',0]],
     [['Spine1',90],['Spine2',95],['Neck1',95],['Neck2',70],['Head',10],['Jaw',-30]]
   ], 130:[
@@ -163,7 +208,8 @@ const PokeModel = (() => {
     [['Spine1',80],['Spine2',95],['Spine3',105],['Spine4',100],['Spine5',80],['Neck',10],['Head',-15],['UpperBeak',0]]
   ]};
   const CURL = {10:[55],13:[55],23:[140,'coil'],24:[130,'coil'],147:[150,'coil'],148:[150,'coil'],843:[220,'coil']};
-  const FAT = {10:1.5,13:1.5,23:2,24:2,147:2,148:2,336:2.3,384:1.6,130:1.5,350:1.8,497:1.6,603:1.7,843:2};   // ensancha el cuerpo (X/Z): los modelos son demasiado delgados
+  const ROTY = {539: -Math.PI / 2};
+  const FAT = {10:1.5,13:1.5,23:2,24:2,147:2,148:2,336:1,384:1.6,130:1.5,350:1.8,497:1.6,603:1.7,843:2};   // ensancha el cuerpo (X/Z): los modelos son demasiado delgados
   // Los modelos sin animación llegan en T-pose: baja los brazos (rota el hueso del brazo hacia abajo)
   function lowerArms(root, pid) {
     if (WING.has(pid)) return [];   // sus "brazos" son alas: se dejan abiertas
@@ -317,9 +363,11 @@ const PokeModel = (() => {
     } else { arms = lowerArms(g.scene, pid); if (!arms.length && TPOSE.has(pid)) arms = [dropArms(g.scene, undefined, pid) ? 'malla' : 'no']; }
     if (!clips.length && GEO[pid]) bendGeo(g.scene, ...GEO[pid]);
     if (!clips.length && CURL[pid]) curlBones(g.scene, CURL[pid][0], CURL[pid][1]);
+    if (pid === 336 && !g.scene.userData.inflated) { inflate(g.scene, 5, 60, 105); g.scene.userData.inflated = true; }
     if (SHAPE_S[pid]) SHAPE[pid] = SHAPE_S[pid];
     if (!clips.length && SHAPE[pid]) shapeBones(g.scene, SHAPE[pid], SHAPE_EXTRA[pid]);
     if (!clips.length && FAT[pid]) g.scene.scale.set(FAT[pid], 1, FAT[pid]);
+    if (ROTY[pid]) g.scene.rotation.y += ROTY[pid];   // modelos que miran hacia el lado en vez de hacia delante
     let m = measure(wrap), size = m.rob.getSize(new THREE.Vector3()), fs = m.full.getSize(new THREE.Vector3());
     const raw = fs.toArray().map(x => +x.toFixed(3));
     let k = 2.6 / Math.max(size.y, 0.75 * Math.max(size.x, size.z), 0.001);
