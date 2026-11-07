@@ -187,7 +187,12 @@ const PokeModel = (() => {
   const GEO = {350:[1,0,-1,120,'coil',0.6], 603:[1,0,-1,110,'coil',0.6], 208:[2,1,1,70,'s',0.7]};
   // Gyarados en S: la cola sube al final, el cuerpo empieza a subir tras las aletas inferiores (Tail3), se inclina atrás
   // y tras las aletas superiores (Spine5/Neck) el cuello baja la cabeza. Rumbos en grados (0 = delante, 90 = arriba, 180 = atrás).
-  const SHAPE_S = {336:[
+  const SHAPE_S = {
+    495:[[['LFeelerC01',95],['LFeelerC02',115],['LFeelerC03',140],['LFeelerC04',165],['LFeelerC05',190],['LFeelerC06',215],['LFeelerC07',235],['LFeelerC08',250],['LFeelerC09',260],['LFeelerC10',0]],
+      [['RFeelerC01',95],['RFeelerC02',115],['RFeelerC03',140],['RFeelerC04',165],['RFeelerC05',190],['RFeelerC06',215],['RFeelerC07',235],['RFeelerC08',250],['RFeelerC09',260],['RFeelerC10',0]]],
+    496:[[['LFeelerB1',95],['LFeelerB2',115],['LFeelerB3',140],['LFeelerB4',165],['LFeelerB5',190],['LFeelerB6',215],['LFeelerB7',235],['LFeelerB8',250],['LFeelerB9',260],['LFeelerB10',0]],
+      [['RFeelerB1',95],['RFeelerB2',115],['RFeelerB3',140],['RFeelerB4',165],['RFeelerB5',190],['RFeelerB6',215],['RFeelerB7',235],['RFeelerB8',250],['RFeelerB9',260],['RFeelerB10',0]]],
+    336:[
     [['Hips',225],['Tail1',180],['Tail2',180],['Tail3',180],['Tail4',124],['Tail5',92],['Tail6',124],['Tail7',202],['Tail8',280],['Tail9',312],['Tail10',280],['Tail11',202],['Tail12',180],['Tail13',161],['Tail14',124],['Tail15',105],['Tail16',105],['EndTail16',0]],
     [['Spine1',64],['Spine2',45],['Spine3',0],['Spine4',-60],['Spine5',-85],['Spine6',-60],['Spine7',0],['Spine8',0],['Spine9',0],['Spine10',50],['Spine11',73],['Spine12',74],['Spine13',81],['Spine14',90],['Neck',90],['Head',85],['EndHead',0]],
     [['Tongue1',-15],['Tongue2',-40],['Tongue3',-65],['Tongue4',-82],['Tongue5',-95],['EndTongue5',0]]
@@ -198,7 +203,7 @@ const PokeModel = (() => {
     [['LFeelerC1',110],['LFeelerC2',130],['LFeelerC3',150],['LFeelerC4',170],['LFeelerC5',190],['LFeelerC6',205],['LFeelerC7',220],['LFeelerC8',235],['LFeelerC9',245],['LFeelerC10',0]],
     [['RFeelerC1',110],['RFeelerC2',130],['RFeelerC3',150],['RFeelerC4',170],['RFeelerC5',190],['RFeelerC6',205],['RFeelerC7',220],['RFeelerC8',235],['RFeelerC9',245],['RFeelerC10',0]]
   ]};
-  const SHAPE_EXTRA = {123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
+  const SHAPE_EXTRA = {495:{stretch:[['LFeelerC02','LFeelerC03','LFeelerC04','LFeelerC05','LFeelerC06','LFeelerC07','LFeelerC08','LFeelerC09','LFeelerC10','RFeelerC02','RFeelerC03','RFeelerC04','RFeelerC05','RFeelerC06','RFeelerC07','RFeelerC08','RFeelerC09','RFeelerC10'],0.4]}, 496:{stretch:[['LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],0.55]}, 123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
     384:{stretch:[['Spine2','Neck1','Neck2','Head','Jaw'],1.7], zrot:[['LArm',55],['RArm',-55]], xrot:[['Jaw',30,'Head',0.48,0.91]], snap:['Jaw']}, 497:{hide:['LFeelerC1','RFeelerC1','LFeelerA1','RFeelerA1']}};
   const SHAPE = {123:[], 428:[], 384:[
     [['Hips',270],['Tail1',235],['Tail2',200],['Tail3',165],['Tail4',130],['Tail5',100],['Tail6',85],['Tail7',85],['Tail8',100],['Tail9',130],['Tail10',165],['Tail11',200],['Tail12',225],['Tail13',245],['Tail14',255],['Tail15',0]],
