@@ -225,6 +225,22 @@ const PokeModel = (() => {
       pa.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
     });
   }
+  // Modelos sin esqueleto con los brazos en T dentro de la malla: se doblan hacia abajo moviendo los vértices (lat = eje lateral local, up = eje vertical local,
+  // x0 = donde empieza el brazo, p = altura del hombro, th = grados, len = longitud de la curva, sc = escala de la longitud del brazo, dn = sentido local de "abajo")
+  const DROOP = {465: {lat: 'X', up: 'Z', x0: 1.0, p: -0.98, th: 58, len: 1.0, sc: 0.42, dn: 1}, 563: {lat: 'Z', up: 'Y', x0: 6, p: -7.9, th: 80, len: 14, sc: 0.3, dn: 1}};
+  function droop(root, c) {
+    root.traverse(o => {
+      if (!o.isMesh || o.geometry.attributes.position.count < 1000) return;
+      const pa = o.geometry.attributes.position, gl = 'get' + c.lat, gu = 'get' + c.up, sl = 'set' + c.lat, su = 'set' + c.up;
+      for (let i = 0; i < pa.count; i++) {
+        const lx = pa[gl](i), u = pa[gu](i), l = Math.abs(lx); if (l <= c.x0) continue;
+        const sg = Math.sign(lx), d = (l - c.x0) * c.sc, t = Math.min(1, (l - c.x0) / c.len), th = c.th * Math.PI / 180 * t * t * (3 - 2 * t), du = u - c.p;
+        pa[sl](i, sg * (c.x0 + d * Math.cos(th) - c.dn * du * Math.sin(th)));
+        pa[su](i, c.p + c.dn * d * Math.sin(th) + du * Math.cos(th));
+      }
+      pa.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
+    });
+  }
   const ROTY = {539: -Math.PI / 2};
   const FAT = {10:1.5,13:1.5,23:2,24:2,147:2,148:2,336:1,384:1.6,130:1.5,350:1.8,497:1.6,603:1.7,843:2};   // ensancha el cuerpo (X/Z): los modelos son demasiado delgados
   // Los modelos sin animación llegan en T-pose: baja los brazos (rota el hueso del brazo hacia abajo)
@@ -383,6 +399,7 @@ const PokeModel = (() => {
     if (pid === 336 && !g.scene.userData.inflated) { inflate(g.scene, 5, 60, 105); g.scene.userData.inflated = true; }
     if (SHAPE_S[pid]) SHAPE[pid] = SHAPE_S[pid];
     if (!clips.length && SHAPE[pid]) shapeBones(g.scene, SHAPE[pid], SHAPE_EXTRA[pid]);
+    if (DROOP[pid] && !clips.length) droop(g.scene, DROOP[pid]);
     if (SQUASH[pid] && !clips.length) squash(g.scene, SQUASH[pid]);
     if (!clips.length && FAT[pid]) g.scene.scale.set(FAT[pid], 1, FAT[pid]);
     if (ROTY[pid]) g.scene.rotation.y += ROTY[pid];   // modelos que miran hacia el lado en vez de hacia delante
