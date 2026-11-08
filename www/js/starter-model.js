@@ -197,7 +197,7 @@ const PokeModel = (() => {
     336:[
     [['Hips',225],['Tail1',180],['Tail2',180],['Tail3',180],['Tail4',124],['Tail5',92],['Tail6',124],['Tail7',202],['Tail8',280],['Tail9',312],['Tail10',280],['Tail11',202],['Tail12',180],['Tail13',161],['Tail14',124],['Tail15',105],['Tail16',105],['EndTail16',0]],
     [['Spine1',64],['Spine2',45],['Spine3',0],['Spine4',-60],['Spine5',-85],['Spine6',-60],['Spine7',0],['Spine8',0],['Spine9',0],['Spine10',50],['Spine11',73],['Spine12',74],['Spine13',81],['Spine14',90],['Neck',90],['Head',85],['EndHead',0]],
-    [['Tongue1',-15],['Tongue2',-40],['Tongue3',-65],['Tongue4',-82],['Tongue5',-95],['EndTongue5',0]]
+    [['Tongue1',6],['Tongue2',6],['Tongue3',-40],['Tongue4',-85],['Tongue5',-95]]
   ],
     497:[
     [['Waist',265],['Tail1',245],['Tail2',215],['Tail3',185],['Tail4',155],['Tail5',125],['Tail6',100],['Tail7',85],['Tail8',80],['Tail9',85],['Tail10',100],['Tail11',120],['Tail12',140],['Tail13',160],['Tail14',175],['Tail15',190],['Tail16',0]],
@@ -205,9 +205,9 @@ const PokeModel = (() => {
     [['LFeelerC1',110],['LFeelerC2',130],['LFeelerC3',150],['LFeelerC4',170],['LFeelerC5',190],['LFeelerC6',205],['LFeelerC7',220],['LFeelerC8',235],['LFeelerC9',245],['LFeelerC10',0]],
     [['RFeelerC1',110],['RFeelerC2',130],['RFeelerC3',150],['RFeelerC4',170],['RFeelerC5',190],['RFeelerC6',205],['RFeelerC7',220],['RFeelerC8',235],['RFeelerC9',245],['RFeelerC10',0]]
   ]};
-  const SHAPE_EXTRA = {671:{stretch:[['LFeelerE02','LFeelerE03','LFeelerE04','LFeelerE05','LFeelerE06','LFeelerE07','LFeelerE08','LFeelerE09','LFeelerE10','LFeelerE11','LFeelerE12','RFeelerE02','RFeelerE03','RFeelerE04','RFeelerE05','RFeelerE06','RFeelerE07','RFeelerE08','RFeelerE09','RFeelerE10','RFeelerE11','RFeelerE12'],0.45]}, 495:{stretch:[['LFeelerC02','LFeelerC03','LFeelerC04','LFeelerC05','LFeelerC06','LFeelerC07','LFeelerC08','LFeelerC09','LFeelerC10','RFeelerC02','RFeelerC03','RFeelerC04','RFeelerC05','RFeelerC06','RFeelerC07','RFeelerC08','RFeelerC09','RFeelerC10'],0.4]}, 496:{stretch:[['LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],0.55]}, 123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
+  const SHAPE_EXTRA = {38:{xrot:[['014_LTailA1',35],['015_LTailA2',18],['016_LTailA3',12],['017_LTailA4',10],['018_LTailA5',8],['019_LTailA6',8],['020_LTailA7',8],['022_LTailB1',35],['023_LTailB2',18],['024_LTailB3',12],['025_LTailB4',10],['026_LTailB5',8],['027_LTailB6',8],['028_LTailB7',8],['030_LTailC1',35],['031_LTailC2',18],['032_LTailC3',12],['033_LTailC4',10],['034_LTailC5',8],['035_LTailC6',8],['037_LTailD1',35],['038_LTailD2',18],['039_LTailD3',12],['040_LTailD4',10],['041_LTailD5',8],['051_RTailA1',35],['052_RTailA2',18],['053_RTailA3',12],['054_RTailA4',10],['055_RTailA5',8],['056_RTailA6',8],['057_RTailA7',8],['059_RTailB1',35],['060_RTailB2',18],['061_RTailB3',12],['062_RTailB4',10],['063_RTailB5',8],['064_RTailB6',8],['065_RTailB7',8],['067_RTailC1',35],['068_RTailC2',18],['069_RTailC3',12],['070_RTailC4',10],['071_RTailC5',8],['072_RTailC6',8],['074_RTailD1',35],['075_RTailD2',18],['076_RTailD3',12],['077_RTailD4',10],['078_RTailD5',8],['080_TailA1',35],['081_TailA2',18],['082_TailA3',12],['083_TailA4',10],['084_TailA5',8],['085_TailA6',8],['086_TailA7',8],['087_TailA8',8]]}, 671:{stretch:[['LFeelerE02','LFeelerE03','LFeelerE04','LFeelerE05','LFeelerE06','LFeelerE07','LFeelerE08','LFeelerE09','LFeelerE10','LFeelerE11','LFeelerE12','RFeelerE02','RFeelerE03','RFeelerE04','RFeelerE05','RFeelerE06','RFeelerE07','RFeelerE08','RFeelerE09','RFeelerE10','RFeelerE11','RFeelerE12'],0.45]}, 495:{stretch:[['LFeelerC02','LFeelerC03','LFeelerC04','LFeelerC05','LFeelerC06','LFeelerC07','LFeelerC08','LFeelerC09','LFeelerC10','RFeelerC02','RFeelerC03','RFeelerC04','RFeelerC05','RFeelerC06','RFeelerC07','RFeelerC08','RFeelerC09','RFeelerC10'],0.4]}, 496:{stretch:[['LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],0.55]}, 123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
     384:{stretch:[['Spine2','Neck1','Neck2','Head','Jaw'],1.7], zrot:[['LArm',55],['RArm',-55]], xrot:[['Jaw',30,'Head',0.48,0.91]], snap:['Jaw']}, 497:{hide:['LFeelerC1','RFeelerC1','LFeelerA1','RFeelerA1']}};
-  const SHAPE = {123:[], 428:[], 384:[
+  const SHAPE = {38:[], 123:[], 428:[], 384:[
     [['Hips',270],['Tail1',235],['Tail2',200],['Tail3',165],['Tail4',130],['Tail5',100],['Tail6',85],['Tail7',85],['Tail8',100],['Tail9',130],['Tail10',165],['Tail11',200],['Tail12',225],['Tail13',245],['Tail14',255],['Tail15',0]],
     [['Spine1',90],['Spine2',95],['Neck1',95],['Neck2',70],['Head',10],['Jaw',-30]]
   ], 130:[
@@ -227,19 +227,40 @@ const PokeModel = (() => {
   }
   // Modelos sin esqueleto con los brazos en T dentro de la malla: se doblan hacia abajo moviendo los vértices (lat = eje lateral local, up = eje vertical local,
   // x0 = donde empieza el brazo, p = altura del hombro, th = grados, len = longitud de la curva, sc = escala de la longitud del brazo, dn = sentido local de "abajo")
-  const DROOP = {465: {lat: 'X', up: 'Z', x0: 1.0, p: -0.98, th: 58, len: 1.0, sc: 0.42, dn: 1}, 563: {lat: 'Z', up: 'Y', x0: 6, p: -7.9, th: 80, len: 14, sc: 0.3, dn: 1}};
+  const DROOP = {465: {lat: 'X', up: 'Z', x0: 1.0, p: -0.98, th: 58, len: 1.0, sc: 0.42, dn: 1}, 563: {lat: 'Z', up: 'Y', x0: 6, p: -7.9, th: 80, len: 14, sc: 0.3, dn: 1},
+    124: {lat: 'X', up: 'Y', x0: 55, p: 70, th: 55, len: 35, sc: 0.55, dn: 1, band: 25}};
   function droop(root, c) {
     root.traverse(o => {
       if (!o.isMesh || o.geometry.attributes.position.count < 1000) return;
       const pa = o.geometry.attributes.position, gl = 'get' + c.lat, gu = 'get' + c.up, sl = 'set' + c.lat, su = 'set' + c.up;
       for (let i = 0; i < pa.count; i++) {
         const lx = pa[gl](i), u = pa[gu](i), l = Math.abs(lx); if (l <= c.x0) continue;
+        if (c.band && Math.abs(u - c.p) > c.band) continue;
         const sg = Math.sign(lx), d = (l - c.x0) * c.sc, t = Math.min(1, (l - c.x0) / c.len), th = c.th * Math.PI / 180 * t * t * (3 - 2 * t), du = u - c.p;
         pa[sl](i, sg * (c.x0 + d * Math.cos(th) - c.dn * du * Math.sin(th)));
         pa[su](i, c.p + c.dn * d * Math.sin(th) + du * Math.cos(th));
       }
       pa.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
     });
+  }
+  // Texturas de llama en escala de grises que en el juego se tiñen: se les da color y brillo propio (name del material -> [color, emisivo, intensidad])
+  const TINT = {78: {FireCoreA: [0xffc24a, 0xff9a2a, 1.2], FireStenA: [0xff7a28, 0xff5a14, 1, true]}};
+  function tintMats(root, map) {
+    const seen = new Set();
+    root.traverse(o => {
+      if (!o.isMesh) return;
+      (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => {
+        const t = map[m.name]; if (!t || seen.has(m.uuid)) return; seen.add(m.uuid);
+        m.color.setHex(t[0]); m.emissive.setHex(t[1]); if (!t[3]) m.emissiveMap = m.map; else m.map = null; m.emissiveIntensity = t[2]; m.metalness = 0; m.needsUpdate = true;
+      });
+    });
+  }
+  // Materiales con transparencia activada pero sin nada transparente (se ve el interior a través de la malla): se pasan a opacos
+  const TONGUE_DZ = -0.12, TONGUE_DY = -0.02, TONGUE_RDZ = -0.095, TONGUE_RDY = 0.02;   // avance (en unidades del modelo, antes de escalar) de la raíz de la lengua de Seviper
+  const OPAQUE = {83: ['Body']};
+  function makeOpaque(root, names) {
+    root.traverse(o => { if (o.isMesh) (Array.isArray(o.material) ? o.material : [o.material]).forEach(m => { 
+      if (names.includes(m.name)) { m.transparent = false; m.depthWrite = true; m.needsUpdate = true; } }); });
   }
   const ROTY = {539: -Math.PI / 2};
   const FAT = {10:1.5,13:1.5,23:2,24:2,147:2,148:2,336:1,384:1.6,130:1.5,350:1.8,497:1.6,603:1.7,843:2};   // ensancha el cuerpo (X/Z): los modelos son demasiado delgados
@@ -282,11 +303,11 @@ const PokeModel = (() => {
     return report;
   }
 
-  const HIDE = {914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
+  const HIDE = {83:/^Object_7$/, 914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
-  const WING = new Set([16,17,18,21,22,49,142,144,163,164,291,334,380,381,384,566,567,661,662,663,714,715,731,732,733,821,822,823]);   // las alas no se bajan
+  const WING = new Set([120,16,17,18,21,22,49,142,144,163,164,291,334,380,381,384,566,567,661,662,663,714,715,731,732,733,821,822,823]);   // las alas no se bajan
   const NOBEND = new Set([]);   // sin flexionar el antebrazo
-  const TPOSE = new Set([740,97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
+  const TPOSE = new Set([740,96,97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
   // Gholdengo (1000): en la serie 0xxxx su cuerpo flota separado de la tabla; en la 1xxxx va sobre ella
   const CLIP_OVERRIDE = {1000:{idle:/_10000_defaultwait01_loop/, hover:/_10400_attack01/, win:/_10300_roar01/}};
   const LAT_X = new Set([612,190,505,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
@@ -399,6 +420,25 @@ const PokeModel = (() => {
     if (pid === 336 && !g.scene.userData.inflated) { inflate(g.scene, 5, 60, 105); g.scene.userData.inflated = true; }
     if (SHAPE_S[pid]) SHAPE[pid] = SHAPE_S[pid];
     if (!clips.length && SHAPE[pid]) shapeBones(g.scene, SHAPE[pid], SHAPE_EXTRA[pid]);
+    if (pid === 336 && !clips.length) {   // lengua: se adelanta el arranque para que cruce el labio desde dentro de la boca
+      let t1 = null; g.scene.traverse(o => { if (o.isBone && /^Tongue1(_\d+)?$/.test(o.name)) t1 = o; });
+      g.scene.updateMatrixWorld(true);
+      g.scene.traverse(m => {   // los hilos rojos (Object_10) pertenecen a la cabeza: se retrasan el mismo avance
+        if (m.isSkinnedMesh && m.name === 'Object_10' && !m.userData.tongueMoved) {
+          m.userData.tongueMoved = true;
+          const d = new THREE.Vector3(0, TONGUE_RDY, TONGUE_RDZ).transformDirection(new THREE.Matrix4().copy(m.matrixWorld).invert()).multiplyScalar(0);
+          const inv = new THREE.Matrix4().copy(m.matrixWorld).invert();
+          const o0 = new THREE.Vector3().applyMatrix4(inv), o1 = new THREE.Vector3(0, TONGUE_RDY, TONGUE_RDZ).applyMatrix4(inv);
+          d.copy(o1).sub(o0);
+          const P = m.geometry.attributes.position;
+          for (let i = 0; i < P.count; i++) P.setXYZ(i, P.getX(i) + d.x, P.getY(i) + d.y, P.getZ(i) + d.z);
+          P.needsUpdate = true; m.geometry.computeBoundingSphere(); m.frustumCulled = false;
+        }
+      });
+      if (t1) { g.scene.updateMatrixWorld(true); const w = new THREE.Vector3(); t1.getWorldPosition(w); w.z += TONGUE_DZ; w.y += TONGUE_DY; t1.position.copy(t1.parent.worldToLocal(w)); g.scene.updateMatrixWorld(true); }
+    }
+    if (OPAQUE[pid]) makeOpaque(g.scene, OPAQUE[pid]);
+    if (TINT[pid]) tintMats(g.scene, TINT[pid]);
     if (DROOP[pid] && !clips.length) droop(g.scene, DROOP[pid]);
     if (SQUASH[pid] && !clips.length) squash(g.scene, SQUASH[pid]);
     if (!clips.length && FAT[pid]) g.scene.scale.set(FAT[pid], 1, FAT[pid]);
@@ -415,6 +455,74 @@ const PokeModel = (() => {
     if (pid === 802) wrap.traverse(o => { if (o.isMesh && o.name === 'Object_39') o.visible = false; });   // mancha negra plana (ya medida)
     // la esfera de recorte de un modelo con esqueleto usa la pose base (muy distinta): sin esto partes como los ojos desaparecen
     wrap.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+    if (pid === 336 && !g.scene.userData.eyes) {   // Seviper: la zona ocular (malla Object_12) tiene el hueco de la textura transparente -> se rellena de rojo y se dibuja el ojo plano
+      g.scene.userData.eyes = true;
+      g.scene.traverse(m => {
+        if (!m.isMesh || m.name !== 'Object_12' || !m.material.map || !m.material.map.image) return;
+        const im = m.material.map.image, W = im.width, H = im.height, k = W / 256;
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const cx = cv.getContext('2d'); cx.drawImage(im, 0, 0);
+        const id = cx.getImageData(0, 0, W, H), d = id.data;
+        // Hueco real del ojo = píxeles transparentes del mosaico que quedan encerrados por el marco amarillo.
+        // El marco de la mitad derecha tiene una abertura: se cierra con una pared virtual entre la punta (100,216) y la cresta (114,232).
+        const TX1 = Math.round(128 * k), TY0 = Math.round(192 * k), TY1 = Math.round(256 * k);
+        const wall = new Uint8Array(W * H);
+        for (let t = 0; t <= 1; t += 0.5 / (16 * k)) { const wx = Math.round((100 + 14 * t) * k), wy = Math.round((216 + 16 * t) * k); for (let a = -1; a <= 1; a++) for (let b2 = -1; b2 <= 1; b2++) wall[(wy + a) * W + wx + b2] = 1; }
+        const trans = q => d[q * 4 + 3] < 128, outer = new Uint8Array(W * H), st = [];
+        for (let x = 0; x < TX1; x++) { const q = Math.round(199 * k) * W + x; if (trans(q) && !wall[q]) { outer[q] = 1; st.push(q); } }
+        while (st.length) { const c0 = st.pop(), yy = (c0 / W) | 0, xx = c0 - yy * W;
+          for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = xx + ax, ny = yy + ay; if (nx < 0 || nx >= TX1 || ny < TY0 || ny >= TY1) continue; const c1 = ny * W + nx; if (!outer[c1] && !wall[c1] && trans(c1)) { outer[c1] = 1; st.push(c1); } } }
+        const holeAll = new Uint8Array(W * H);
+        for (let y = TY0; y < TY1; y++) for (let x = 0; x < TX1; x++) { const q = y * W + x; if (trans(q) && !outer[q] && !wall[q]) holeAll[q] = 1; }
+        for (const [x0, x1] of [[0, 64], [64, 128]]) {
+          const X0 = Math.round(x0 * k), X1 = Math.round(x1 * k), Y0 = TY0, Y1 = TY1 - 1;
+          const hole = new Uint8Array(W * H); let sx = 0, sy = 0, n = 0, bx0 = 1e9, bx1 = -1, by0 = 1e9, by1 = -1;
+          for (let y = Y0; y <= Y1; y++) for (let x = X0; x < X1; x++) if (holeAll[y * W + x]) { hole[y * W + x] = 1; sx += x; sy += y; n++; bx0 = Math.min(bx0, x); bx1 = Math.max(bx1, x); by0 = Math.min(by0, y); by1 = Math.max(by1, y); }
+          if (!n) continue;
+          const cxm = sx / n, cym = sy / n, rw = (bx1 - bx0) / 2 + 1, rh = (by1 - by0) / 2 + 1;
+          for (let y = Y0; y <= Y1; y++) for (let x = X0; x < X1; x++) {
+            if (!hole[y * W + x]) continue;
+            const q = (y * W + x) * 4;
+            const dx = (x - cxm) / rw, dy = (y - cym) / rh, r = Math.sqrt(dx * dx + dy * dy);
+            let edge = false;
+            for (const [ax, ay] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const xx = x + ax, yy = y + ay; if (xx < 0 || yy < 0 || xx >= W || yy >= H || !hole[yy * W + xx]) { edge = true; break; } }
+            let c;
+            if (edge) c = [42, 7, 7];                                   // contorno oscuro
+            else if ((dx / 0.13) ** 2 + (dy / 0.6) ** 2 < 1) c = [10, 5, 5];   // pupila rasgada vertical
+            else if (Math.hypot(dx + 0.38, dy + 0.4) < 0.12) c = [255, 235, 200];  // brillo
+            else { const t = Math.min(1, r); c = [Math.round(255 - 115 * t), Math.round(90 - 55 * t), Math.round(60 - 40 * t)]; }   // iris rojo
+            d[q] = c[0]; d[q + 1] = c[1]; d[q + 2] = c[2]; d[q + 3] = 255;
+          }
+        }
+        cx.putImageData(id, 0, 0);
+        m.material.map.image = cv; m.material.map.needsUpdate = true;
+      });
+    }
+    if (pid === 83 && !g.scene.userData.cap) {   // Farfetch'd: a la cabeza le falta la parte delantera (esfera) -> se tapa con una esfera del color de la cabeza
+      g.scene.userData.cap = true;
+      let hb = null; g.scene.traverse(o => { if (o.isBone && /^Head_/.test(o.name)) hb = o; });
+      if (hb) {
+        wrap.updateMatrixWorld(true);
+        // textura de la cara: cuencas oscuras alrededor de las pupilas y cejas marcadas (sprite: ceño fruncido, cejas inclinadas hacia el pico)
+        const W = 1024, H = 512, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const cx = cv.getContext('2d'), P = 1024 / 360;
+        cx.fillStyle = '#bfa296'; cx.fillRect(0, 0, W, H);
+        const U = (sg, dg) => (0.25 + sg * dg / 360) * W, V = th => th * P;
+        for (const sg of [-1, 1]) {
+          cx.save(); cx.translate(U(sg, 31), V(82)); cx.scale(1, 1.9);
+          const gr = cx.createRadialGradient(0, 0, 3, 0, 0, 24 * P / 1.9 * 1.0); gr.addColorStop(0, 'rgba(58,38,32,1)'); gr.addColorStop(0.65, 'rgba(70,48,40,0.95)'); gr.addColorStop(1, 'rgba(90,64,54,0)');
+          cx.fillStyle = gr; cx.beginPath(); cx.arc(0, 0, 24 * P / 1.9, 0, Math.PI * 2); cx.fill(); cx.restore();
+          cx.save(); cx.translate(U(sg, 31), V(82)); cx.scale(1, 2.1);   // blanco del ojo
+          cx.beginPath(); cx.arc(0, 0, 8.6 * P, 0, Math.PI * 2); cx.fillStyle = '#f6f1e8'; cx.fill(); cx.lineWidth = 1.2 * P; cx.strokeStyle = '#2d1c16'; cx.stroke(); cx.restore();
+          cx.lineCap = 'round'; cx.strokeStyle = '#3a241c'; cx.lineWidth = 5 * P;
+          cx.beginPath(); cx.moveTo(U(sg, 47), V(57)); cx.lineTo(U(sg, 28), V(61)); cx.lineTo(U(sg, 11), V(72)); cx.stroke();
+        }
+        const ctex = new THREE.CanvasTexture(cv); if (THREE.sRGBEncoding) ctex.encoding = THREE.sRGBEncoding;
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 36), new THREE.MeshStandardMaterial({map: ctex, roughness: 0.9}));
+        cap.scale.setScalar(0.435); cap.position.set(-0.26, 0.48, 0.08);
+        wrap.add(cap); wrap.updateMatrixWorld(true); hb.attach(cap);
+      }
+    }
     return {obj:wrap, mixer, acts, info:{clips:clips.length, arms, raw, dims:dims.toArray().map(x => +x.toFixed(2))}};
   }
   const MODEL_BASE = 'https://raw.githubusercontent.com/Pokemon-3D-api/assets/main/models/opt/regular/';
