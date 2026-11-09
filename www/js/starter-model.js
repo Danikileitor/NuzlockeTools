@@ -243,6 +243,28 @@ const PokeModel = (() => {
       pa.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
     });
   }
+  // Suicune: las cintas blancas (sin huesos) salen rectas hacia atrás como una vara; se acortan y se curvan hacia abajo (sin llegar nunca más abajo que las patas)
+  const RIBBON = {245: {names: /^Object_(10|14)$/, extra: /^Object_7$/, sc: 0.5, ang: 0.8}};
+  function ribbon(root, c) {
+    root.updateMatrixWorld(true);
+    const ms = [], ex = []; root.traverse(o => { if (o.isMesh && c.names.test(o.name)) ms.push(o); else if (o.isMesh && c.extra && c.extra.test(o.name)) ex.push(o); });
+    const w = new THREE.Vector3(), tmp = [];
+    let z0 = -Infinity, zm = Infinity, ytop = -Infinity;
+    ms.forEach(o => { const P = o.geometry.attributes.position; for (let i = 0; i < P.count; i++) { w.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld); z0 = Math.max(z0, w.z); zm = Math.min(zm, w.z); ytop = Math.max(ytop, w.y); } });
+    const L = (z0 - zm) * c.sc, R = L / c.ang, yTop = ytop + 0.04 * (z0 - zm);
+    ms.concat(ex).forEach(o => {
+      const isEx = ex.includes(o);
+      const P = o.geometry.attributes.position, inv = new THREE.Matrix4().copy(o.matrixWorld).invert();
+      for (let i = 0; i < P.count; i++) {
+        w.fromBufferAttribute(P, i).applyMatrix4(o.matrixWorld);
+        if (isEx && (w.y > yTop || w.z > z0)) continue;
+        const s = (z0 - w.z) * c.sc, a = Math.min(s / R, c.ang);
+        w.x *= c.sc; w.y -= R * (1 - Math.cos(a)); w.z = z0 - R * Math.sin(a);
+        w.applyMatrix4(inv); P.setXYZ(i, w.x, w.y, w.z);
+      }
+      P.needsUpdate = true; o.geometry.computeBoundingSphere(); o.geometry.computeBoundingBox();
+    });
+  }
   // Texturas de llama en escala de grises que en el juego se tiñen: se les da color y brillo propio (name del material -> [color, emisivo, intensidad])
   const TINT = {78: {FireCoreA: [0xffc24a, 0xff9a2a, 1.2], FireStenA: [0xff7a28, 0xff5a14, 1, true]}};
   function tintMats(root, map) {
@@ -303,7 +325,7 @@ const PokeModel = (() => {
     return report;
   }
 
-  const HIDE = {83:/^Object_7$/, 914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
+  const HIDE = {152:/^Chikorita_[LR]Vine(Nub)?$/, 83:/^Object_7$/, 914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
   const WING = new Set([120,16,17,18,21,22,49,142,144,163,164,291,334,380,381,384,566,567,661,662,663,714,715,731,732,733,821,822,823]);   // las alas no se bajan
   const NOBEND = new Set([]);   // sin flexionar el antebrazo
@@ -441,6 +463,7 @@ const PokeModel = (() => {
     if (TINT[pid]) tintMats(g.scene, TINT[pid]);
     if (DROOP[pid] && !clips.length) droop(g.scene, DROOP[pid]);
     if (SQUASH[pid] && !clips.length) squash(g.scene, SQUASH[pid]);
+    if (RIBBON[pid] && !clips.length) ribbon(g.scene, RIBBON[pid]);
     if (!clips.length && FAT[pid]) g.scene.scale.set(FAT[pid], 1, FAT[pid]);
     if (ROTY[pid]) g.scene.rotation.y += ROTY[pid];   // modelos que miran hacia el lado en vez de hacia delante
     let m = measure(wrap), size = m.rob.getSize(new THREE.Vector3()), fs = m.full.getSize(new THREE.Vector3());
