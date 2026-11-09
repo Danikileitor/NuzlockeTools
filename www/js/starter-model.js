@@ -146,6 +146,22 @@ const PokeModel = (() => {
       const O2 = A.clone().sub(P).applyQuaternion(Q).add(P);
       b.position.copy(b.parent.worldToLocal(O2)); b.updateMatrixWorld(true);
     });
+    if (extra && extra.arc) extra.arc.forEach(([names, sg, heads]) => {   // cadenas de huesos sueltas (no anidadas) en el eje X: se colocan sobre una curva en el plano XY (heading desde el eje lateral, negativo = abajo)
+      const bs = names.map(n => byName[n]); if (bs.some(x => !x)) return;
+      const P = new THREE.Vector3(), W = new THREE.Quaternion(), Pq = new THREE.Quaternion(), pos = bs.map(x => { x.updateMatrixWorld(true); return x.getWorldPosition(new THREE.Vector3()); });
+      const cur = pos[0].clone();
+      bs.forEach((b, i) => {
+        const h = heads[Math.min(i, heads.length - 1)] * Math.PI / 180;
+        if (i > 0) { const len = pos[i].distanceTo(pos[i - 1]), hp = heads[Math.min(i - 1, heads.length - 1)] * Math.PI / 180; cur.add(new THREE.Vector3(sg * Math.cos(hp), Math.sin(hp), 0).multiplyScalar(len)); }
+        [byName['tr' + b.name], b].forEach(bb => {
+          if (!bb) return;
+          bb.parent.updateMatrixWorld(true); bb.updateMatrixWorld(true);
+          bb.getWorldQuaternion(W); W.premultiply(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), h * sg));
+          bb.parent.getWorldQuaternion(Pq); bb.quaternion.copy(Pq.invert().multiply(W));
+          bb.position.copy(bb.parent.worldToLocal(cur.clone())); bb.updateMatrixWorld(true);
+        });
+      });
+    });
     if (extra && extra.zrot) extra.zrot.forEach(([n, deg]) => {
       const b = byName[n]; if (!b) return;
       b.parent.updateMatrixWorld(true); b.parent.getWorldQuaternion(PQ);
@@ -188,6 +204,7 @@ const PokeModel = (() => {
   // Gyarados en S: la cola sube al final, el cuerpo empieza a subir tras las aletas inferiores (Tail3), se inclina atrás
   // y tras las aletas superiores (Spine5/Neck) el cuello baja la cabeza. Rumbos en grados (0 = delante, 90 = arriba, 180 = atrás).
   const SHAPE_S = {
+    386:[],
     671:[[['LFeelerE01',110],['LFeelerE02',140],['LFeelerE03',170],['LFeelerE04',200],['LFeelerE05',225],['LFeelerE06',245],['LFeelerE07',258],['LFeelerE08',265],['LFeelerE09',268],['LFeelerE10',270],['LFeelerE11',270],['LFeelerE12',0]],
       [['RFeelerE01',110],['RFeelerE02',140],['RFeelerE03',170],['RFeelerE04',200],['RFeelerE05',225],['RFeelerE06',245],['RFeelerE07',258],['RFeelerE08',265],['RFeelerE09',268],['RFeelerE10',270],['RFeelerE11',270],['RFeelerE12',0]]],
     495:[[['LFeelerC01',95],['LFeelerC02',115],['LFeelerC03',140],['LFeelerC04',165],['LFeelerC05',190],['LFeelerC06',215],['LFeelerC07',235],['LFeelerC08',250],['LFeelerC09',260],['LFeelerC10',0]],
@@ -205,7 +222,7 @@ const PokeModel = (() => {
     [['LFeelerC1',110],['LFeelerC2',130],['LFeelerC3',150],['LFeelerC4',170],['LFeelerC5',190],['LFeelerC6',205],['LFeelerC7',220],['LFeelerC8',235],['LFeelerC9',245],['LFeelerC10',0]],
     [['RFeelerC1',110],['RFeelerC2',130],['RFeelerC3',150],['RFeelerC4',170],['RFeelerC5',190],['RFeelerC6',205],['RFeelerC7',220],['RFeelerC8',235],['RFeelerC9',245],['RFeelerC10',0]]
   ]};
-  const SHAPE_EXTRA = {38:{xrot:[['014_LTailA1',35],['015_LTailA2',18],['016_LTailA3',12],['017_LTailA4',10],['018_LTailA5',8],['019_LTailA6',8],['020_LTailA7',8],['022_LTailB1',35],['023_LTailB2',18],['024_LTailB3',12],['025_LTailB4',10],['026_LTailB5',8],['027_LTailB6',8],['028_LTailB7',8],['030_LTailC1',35],['031_LTailC2',18],['032_LTailC3',12],['033_LTailC4',10],['034_LTailC5',8],['035_LTailC6',8],['037_LTailD1',35],['038_LTailD2',18],['039_LTailD3',12],['040_LTailD4',10],['041_LTailD5',8],['051_RTailA1',35],['052_RTailA2',18],['053_RTailA3',12],['054_RTailA4',10],['055_RTailA5',8],['056_RTailA6',8],['057_RTailA7',8],['059_RTailB1',35],['060_RTailB2',18],['061_RTailB3',12],['062_RTailB4',10],['063_RTailB5',8],['064_RTailB6',8],['065_RTailB7',8],['067_RTailC1',35],['068_RTailC2',18],['069_RTailC3',12],['070_RTailC4',10],['071_RTailC5',8],['072_RTailC6',8],['074_RTailD1',35],['075_RTailD2',18],['076_RTailD3',12],['077_RTailD4',10],['078_RTailD5',8],['080_TailA1',35],['081_TailA2',18],['082_TailA3',12],['083_TailA4',10],['084_TailA5',8],['085_TailA6',8],['086_TailA7',8],['087_TailA8',8]]}, 671:{stretch:[['LFeelerE02','LFeelerE03','LFeelerE04','LFeelerE05','LFeelerE06','LFeelerE07','LFeelerE08','LFeelerE09','LFeelerE10','LFeelerE11','LFeelerE12','RFeelerE02','RFeelerE03','RFeelerE04','RFeelerE05','RFeelerE06','RFeelerE07','RFeelerE08','RFeelerE09','RFeelerE10','RFeelerE11','RFeelerE12'],0.45]}, 495:{stretch:[['LFeelerC02','LFeelerC03','LFeelerC04','LFeelerC05','LFeelerC06','LFeelerC07','LFeelerC08','LFeelerC09','LFeelerC10','RFeelerC02','RFeelerC03','RFeelerC04','RFeelerC05','RFeelerC06','RFeelerC07','RFeelerC08','RFeelerC09','RFeelerC10'],0.4]}, 496:{stretch:[['LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],0.55]}, 123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
+  const SHAPE_EXTRA = {386:{arc:[[['LFeelerA1','LFeelerA2','LFeelerA3','LFeelerA4','LFeelerA5','LFeelerA6','LFeelerA7','LFeelerA8','LFeelerA9','LFeelerA10'],1,[-30,-45,-60,-70,-80,-85,-90,-90,-90,-90]],[['LFeelerB1','LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10'],1,[-30,-45,-60,-70,-80,-85,-90,-90,-90,-90]],[['RFeelerA1','RFeelerA2','RFeelerA3','RFeelerA4','RFeelerA5','RFeelerA6','RFeelerA7','RFeelerA8','RFeelerA9','RFeelerA10'],-1,[-30,-45,-60,-70,-80,-85,-90,-90,-90,-90]],[['RFeelerB1','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],-1,[-30,-45,-60,-70,-80,-85,-90,-90,-90,-90]]]}, 38:{xrot:[['014_LTailA1',35],['015_LTailA2',18],['016_LTailA3',12],['017_LTailA4',10],['018_LTailA5',8],['019_LTailA6',8],['020_LTailA7',8],['022_LTailB1',35],['023_LTailB2',18],['024_LTailB3',12],['025_LTailB4',10],['026_LTailB5',8],['027_LTailB6',8],['028_LTailB7',8],['030_LTailC1',35],['031_LTailC2',18],['032_LTailC3',12],['033_LTailC4',10],['034_LTailC5',8],['035_LTailC6',8],['037_LTailD1',35],['038_LTailD2',18],['039_LTailD3',12],['040_LTailD4',10],['041_LTailD5',8],['051_RTailA1',35],['052_RTailA2',18],['053_RTailA3',12],['054_RTailA4',10],['055_RTailA5',8],['056_RTailA6',8],['057_RTailA7',8],['059_RTailB1',35],['060_RTailB2',18],['061_RTailB3',12],['062_RTailB4',10],['063_RTailB5',8],['064_RTailB6',8],['065_RTailB7',8],['067_RTailC1',35],['068_RTailC2',18],['069_RTailC3',12],['070_RTailC4',10],['071_RTailC5',8],['072_RTailC6',8],['074_RTailD1',35],['075_RTailD2',18],['076_RTailD3',12],['077_RTailD4',10],['078_RTailD5',8],['080_TailA1',35],['081_TailA2',18],['082_TailA3',12],['083_TailA4',10],['084_TailA5',8],['085_TailA6',8],['086_TailA7',8],['087_TailA8',8]]}, 671:{stretch:[['LFeelerE02','LFeelerE03','LFeelerE04','LFeelerE05','LFeelerE06','LFeelerE07','LFeelerE08','LFeelerE09','LFeelerE10','LFeelerE11','LFeelerE12','RFeelerE02','RFeelerE03','RFeelerE04','RFeelerE05','RFeelerE06','RFeelerE07','RFeelerE08','RFeelerE09','RFeelerE10','RFeelerE11','RFeelerE12'],0.45]}, 495:{stretch:[['LFeelerC02','LFeelerC03','LFeelerC04','LFeelerC05','LFeelerC06','LFeelerC07','LFeelerC08','LFeelerC09','LFeelerC10','RFeelerC02','RFeelerC03','RFeelerC04','RFeelerC05','RFeelerC06','RFeelerC07','RFeelerC08','RFeelerC09','RFeelerC10'],0.4]}, 496:{stretch:[['LFeelerB2','LFeelerB3','LFeelerB4','LFeelerB5','LFeelerB6','LFeelerB7','LFeelerB8','LFeelerB9','LFeelerB10','RFeelerB2','RFeelerB3','RFeelerB4','RFeelerB5','RFeelerB6','RFeelerB7','RFeelerB8','RFeelerB9','RFeelerB10'],0.55]}, 123:{xrot:[['LArm',-65],['RArm',-65]]}, 428:{zrot:[['LEar2',-30],['LEar3',-25],['LEar4',-20],['LEar5',-15],['REar2',30],['REar3',25],['REar4',20],['REar5',15]]}, 336:{smooth:[['Tail16','Tail15','Tail14','Tail13','Tail12','Tail11','Tail10','Tail9','Tail8','Tail7','Tail6','Tail5','Tail4','Tail3','Tail2','Tail1','Hips','Spine1','Spine2','Spine3','Spine4','Spine5','Spine6','Spine7','Spine8','Spine9','Spine10','Spine11','Spine12','Spine13','Spine14','Neck','Head'],3]},
     384:{stretch:[['Spine2','Neck1','Neck2','Head','Jaw'],1.7], zrot:[['LArm',55],['RArm',-55]], xrot:[['Jaw',30,'Head',0.48,0.91]], snap:['Jaw']}, 497:{hide:['LFeelerC1','RFeelerC1','LFeelerA1','RFeelerA1']}};
   const SHAPE = {38:[], 123:[], 428:[], 384:[
     [['Hips',270],['Tail1',235],['Tail2',200],['Tail3',165],['Tail4',130],['Tail5',100],['Tail6',85],['Tail7',85],['Tail8',100],['Tail9',130],['Tail10',165],['Tail11',200],['Tail12',225],['Tail13',245],['Tail14',255],['Tail15',0]],
@@ -328,8 +345,9 @@ const PokeModel = (() => {
   const HIDE = {152:/^Chikorita_[LR]Vine(Nub)?$/, 83:/^Object_7$/, 914:/gel_mesh/, 288:/^Sphere$/, 1000:/^Object_(253|255|257|259|261)$/};   // 1000: monedas sueltas de Gholdengo   // mallas que en la pose base salen estiradas decenas de veces
   // Modelos rígidos (sin esqueleto) exportados en T-pose: baja los brazos deformando la malla alrededor del hombro
   const WING = new Set([120,16,17,18,21,22,49,142,144,163,164,291,334,380,381,384,566,567,661,662,663,714,715,731,732,733,821,822,823]);   // las alas no se bajan
+  const NOANIM = new Set([386]);
   const NOBEND = new Set([]);   // sin flexionar el antebrazo
-  const TPOSE = new Set([740,96,97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
+  const TPOSE = new Set([256,386,740,96,97,106,125,126,185,186,190,239,272,288,294,308,354,360,390,391,453,504,505,511,512,513,514,515,516,532,533,534,538,539,552,559,562,592,611,612,614,624,629,765]);
   // Gholdengo (1000): en la serie 0xxxx su cuerpo flota separado de la tabla; en la 1xxxx va sobre ella
   const CLIP_OVERRIDE = {1000:{idle:/_10000_defaultwait01_loop/, hover:/_10400_attack01/, win:/_10300_roar01/}};
   const LAT_X = new Set([612,190,505,552,611,504,513,515,532,559]);       // modelos con cola/cuello largos hacia delante: el eje de los brazos es siempre X
@@ -421,7 +439,7 @@ const PokeModel = (() => {
       ms.forEach(m => { if (m && m.metalness > 0.3) m.metalness = 0.1; });
       if ((hasMain && /lod[1-9]/i.test(o.name)) || (HIDE[pid] && HIDE[pid].test(o.name)) || ms.every(m => m.transparent && m.opacity === 0)) o.visible = false;
     });
-    const clips = (g.animations || []).filter(c => !/eye|mouth|blink/i.test(c.name));
+    const clips = NOANIM.has(pid) ? [] : (g.animations || []).filter(c => !/eye|mouth|blink/i.test(c.name));   // NOANIM: su animación deja los brazos en T
     let mixer = null, acts = null, arms = [];
     if (clips.length) {
       mixer = new THREE.AnimationMixer(g.scene);
