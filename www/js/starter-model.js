@@ -245,10 +245,11 @@ const PokeModel = (() => {
   // Modelos sin esqueleto con los brazos en T dentro de la malla: se doblan hacia abajo moviendo los vértices (lat = eje lateral local, up = eje vertical local,
   // x0 = donde empieza el brazo, p = altura del hombro, th = grados, len = longitud de la curva, sc = escala de la longitud del brazo, dn = sentido local de "abajo")
   const DROOP = {465: {lat: 'X', up: 'Z', x0: 1.0, p: -0.98, th: 58, len: 1.0, sc: 0.42, dn: 1}, 563: {lat: 'Z', up: 'Y', x0: 6, p: -7.9, th: 80, len: 14, sc: 0.3, dn: 1},
+    469: {lat: 'X', up: 'Z', x0: 0.25, p: 0.285, th: 28, len: 0.8, sc: 1, dn: 1, min: 100},
     124: {lat: 'X', up: 'Y', x0: 55, p: 70, th: 55, len: 35, sc: 0.55, dn: 1, band: 25}};
   function droop(root, c) {
     root.traverse(o => {
-      if (!o.isMesh || o.geometry.attributes.position.count < 1000) return;
+      if (!o.isMesh || o.geometry.attributes.position.count < (c.min || 1000)) return;
       const pa = o.geometry.attributes.position, gl = 'get' + c.lat, gu = 'get' + c.up, sl = 'set' + c.lat, su = 'set' + c.up;
       for (let i = 0; i < pa.count; i++) {
         const lx = pa[gl](i), u = pa[gu](i), l = Math.abs(lx); if (l <= c.x0) continue;
