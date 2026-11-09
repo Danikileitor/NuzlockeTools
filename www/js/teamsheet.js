@@ -11,10 +11,12 @@ const catName = c => (prefs.lang === 'es' ? CAT_ES : CAT_EN)[c];
 const TYPE_ES = {Normal:'Normal',Fire:'Fuego',Water:'Agua',Electric:'Eléctrico',Grass:'Planta',Ice:'Hielo',Fighting:'Lucha',Poison:'Veneno',Ground:'Tierra',Flying:'Volador',Psychic:'Psíquico',Bug:'Bicho',Rock:'Roca',Ghost:'Fantasma',Dragon:'Dragón',Dark:'Siniestro',Steel:'Acero',Fairy:'Hada',Stellar:'Astral'};
 const trType = t => (prefs.lang === 'es' && TYPE_ES[t]) || t;
 const KEY = 'rival-team-gen9-v1';   // formato antiguo (solo Gen 9)
-const KEY2 = 'pokemon-teamsheet-v2';
+const KEY2 = 'pokemon-teamsheet-v2';   // pestaña Rival
+const KEYS = {rival: KEY2, own: 'pokemon-teamsheet-own-v1'};   // una lista independiente por pestaña
 const PREF = 'rival-team-gen9-prefs';
-let prefs = {lang:'es', random:false, gen:9};
+let prefs = {lang:'es', random:false, gen:9, view:'rival'};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch(e) {}
+if (!KEYS[prefs.view]) prefs.view = 'rival';
 prefs.random = PMRandom.get();   // Randomlocke compartido entre páginas
 const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
 // k: 'a' habilidad, 'm' movimiento, 'i' objeto
@@ -31,7 +33,7 @@ const I18N = {
   es: {resetAll:'Liberar todo', clear:'Liberar', pokemon:'Pokémon', nick:'Mote', ability:'Habilidad', item:'Objeto', nature:'Naturaleza',
        baseStats:'Stats base', moves:'Movimientos', total:'Total', searchPh:'Buscar Pokémon…', itemPh:'Sin objeto', movePh:'Movimiento',
        none:'No existe en esta gen', pickNat:'— Naturaleza —', pickAb:'— Habilidad —', own:'Del Pokémon', allAb:'Todas las habilidades',
-       neutral:'neutra', wipe:'Borrar todos los equipos', confirmWipe:'¿Borrar TODOS los equipos de TODAS las generaciones? Esta acción no se puede deshacer.', copy:'Copiar', paste:'Pegar', copied:'¡Copiado!', team:'Equipo', illegal:'Este Pokémon no aprende este movimiento en esta gen', noRes:'Sin resultados', confirmReset:'¿Liberar los 6 Pokémon?', genTitle:'Generación', langTitle:'Idioma',
+       neutral:'neutra', wipe:'Borrar todos los equipos', confirmWipe:'¿Borrar TODOS los equipos de TODAS las generaciones de la pestaña «%s»? Esta acción no se puede deshacer.', tabRival:'Rival', tabOwn:'Propio', tabTitle:'Equipo del rival o equipo propio', copy:'Copiar', paste:'Pegar', copied:'¡Copiado!', team:'Equipo', illegal:'Este Pokémon no aprende este movimiento en esta gen', noRes:'Sin resultados', confirmReset:'¿Liberar los 6 Pokémon?', genTitle:'Generación', langTitle:'Idioma',
        rndOn:'Randomlocke: permite elegir cualquier habilidad y cualquier movimiento de cualquier generación', rndOff:'Las habilidades existen a partir de la Gen 3',
        stat0:'PS', stat1:'Ataque', stat2:'Defensa', stat3:'At. Esp.', stat4:'Def. Esp.', stat5:'Velocidad', special:'Especial',
        ab:['Atq','Def','AtE','DfE','Vel'],
@@ -39,7 +41,7 @@ const I18N = {
   en: {resetAll:'Release all', clear:'Release', pokemon:'Pokémon', nick:'Nickname', ability:'Ability', item:'Item', nature:'Nature',
        baseStats:'Base stats', moves:'Moves', total:'Total', searchPh:'Search Pokémon…', itemPh:'No item', movePh:'Move',
        none:'Not available in this gen', pickNat:'— Nature —', pickAb:'— Ability —', own:"Pokémon's own", allAb:'All abilities',
-       neutral:'neutral', wipe:'Delete all teams', confirmWipe:'Delete ALL teams from ALL generations? This cannot be undone.', copy:'Copy', paste:'Paste', copied:'Copied!', team:'Team', illegal:"This Pokémon can't learn this move in this gen", noRes:'No results', confirmReset:'Release all 6 Pokémon?', genTitle:'Generation', langTitle:'Language',
+       neutral:'neutral', wipe:'Delete all teams', confirmWipe:'Delete ALL teams from ALL generations in the «%s» tab? This cannot be undone.', tabRival:'Rival', tabOwn:'Own', tabTitle:'Opponent team or your own team', copy:'Copy', paste:'Paste', copied:'Copied!', team:'Team', illegal:"This Pokémon can't learn this move in this gen", noRes:'No results', confirmReset:'Release all 6 Pokémon?', genTitle:'Generation', langTitle:'Language',
        rndOn:'Randomlocke: allows any ability and any move from any generation', rndOff:'Abilities exist from Gen 3 onwards',
        stat0:'HP', stat1:'Attack', stat2:'Defense', stat3:'Sp. Atk', stat4:'Sp. Def', stat5:'Speed', special:'Special',
        ab:['Atk','Def','SpA','SpD','Spe'],
@@ -59,12 +61,15 @@ const el = (tag, attrs={}, ...kids) => {
 /* ---------- Estado ---------- */
 const blank = () => ({sp:'', ab:'', item:'', nat:'', nick:'', mv:['','','','']});
 const clean = arr => Array.from({length:6}, (_, i) => { const x = (arr && arr[i]) || {}; return Object.assign(blank(), x, {mv:[0,1,2,3].map(j => (x.mv||[])[j] || '')}); });
-let all = {};   // por generación: {a: equipo activo, t: [equipo1, equipo2, equipo3]} (cada equipo = 6 huecos)
+let alls = {rival:{}, own:{}};   // datos de cada pestaña
+let all = {};   // (pestaña activa) por generación: {a: equipo activo, t: [equipo1, equipo2, equipo3]} (cada equipo = 6 huecos)
 let team = 0;
 try {
-  all = JSON.parse(localStorage.getItem(KEY2) || 'null') || {};
-  if (!all[9]) { const old = JSON.parse(localStorage.getItem(KEY) || 'null'); if (Array.isArray(old)) all[9] = old; }
-} catch(e) { all = {}; }
+  alls.rival = JSON.parse(localStorage.getItem(KEYS.rival) || 'null') || {};
+  if (!alls.rival[9]) { const old = JSON.parse(localStorage.getItem(KEY) || 'null'); if (Array.isArray(old)) alls.rival[9] = old; }
+} catch(e) { alls.rival = {}; }
+try { alls.own = JSON.parse(localStorage.getItem(KEYS.own) || 'null') || {}; } catch(e) { alls.own = {}; }
+all = alls[prefs.view];
 const normGen = g => {
   let x = all[g];
   if (Array.isArray(x)) x = {a:0, t:[x]};            // formato anterior: un solo equipo
@@ -74,7 +79,7 @@ const normGen = g => {
   return all[g] = x;
 };
 let state = [];
-const save = () => { const gd = normGen(prefs.gen); gd.a = team; gd.t[team] = state; try { localStorage.setItem(KEY2, JSON.stringify(all)); } catch(e) {} };
+const save = () => { const gd = normGen(prefs.gen); gd.a = team; gd.t[team] = state; try { localStorage.setItem(KEYS[prefs.view], JSON.stringify(all)); } catch(e) {} };
 
 /* ---------- Combobox ---------- */
 // Miniatura para las listas de resultados (sprite de dex, con respaldo al sprite gen5)
@@ -361,11 +366,24 @@ const teamBtns = [0,1,2].map(i => {
   teamsBox.append(b);
   return b;
 });
+const sideBox = document.getElementById('side');
+const sideBtns = ['rival','own'].map(v => {
+  const b = el('button', {type:'button', class:'segbtn', role:'tab'});
+  b.dataset.v = v;
+  b.onclick = () => {
+    if (prefs.view === v) return;
+    save(); prefs.view = v; all = alls[v]; setGen(prefs.gen); savePrefs(); syncPrefs(); refresh();
+  };
+  sideBox.append(b);
+  return b;
+});
 for (let g = 1; g <= 9; g++) genSel.append(el('option', {value:g, text:'Gen ' + g}));
 const langSel = document.getElementById('lang'), rndBtn = document.getElementById('randomlocke');
 const syncPrefs = () => {
   genSel.value = prefs.gen;
   teamBtns.forEach((b,i) => { b.classList.toggle('on', i === team); b.setAttribute('aria-pressed', i === team); b.title = `${t('team')} ${i+1}`; });
+  sideBtns.forEach(b => { const on = b.dataset.v === prefs.view; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); b.textContent = t(b.dataset.v === 'own' ? 'tabOwn' : 'tabRival'); });
+  sideBox.title = t('tabTitle'); sideBox.dataset.view = prefs.view; document.body.dataset.view = prefs.view;
   langSel.value = prefs.lang;
   rndBtn.classList.toggle('on', prefs.random);
   rndBtn.setAttribute('aria-pressed', prefs.random);
@@ -389,9 +407,9 @@ updatePaste();
 refresh();
 
 document.getElementById('wipe').onclick = () => {
-  if (!confirm(t('confirmWipe'))) return;
-  all = {}; team = 0;
-  try { localStorage.removeItem(KEY2); localStorage.removeItem(KEY); } catch(e) {}
+  if (!confirm(t('confirmWipe').replace('%s', t(prefs.view === 'own' ? 'tabOwn' : 'tabRival')))) return;
+  all = alls[prefs.view] = {}; team = 0;
+  try { localStorage.removeItem(KEYS[prefs.view]); if (prefs.view === 'rival') localStorage.removeItem(KEY); } catch(e) {}
   state = clean(); save(); syncPrefs(); refresh();
 };
 document.getElementById('resetAll').onclick = () => {

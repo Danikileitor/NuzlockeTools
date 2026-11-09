@@ -86,3 +86,11 @@ footer{max-width:1320px;margin:0 auto;padding:0 16px 30px;color:var(--muted);fon
 #resetAll:hover:not(:disabled){background:#3a1820;border-color:#ff5d5d}
 .dd .opt{display:flex;align-items:center;gap:8px;min-width:0}
 .dd .thumb{width:32px;height:32px;flex:none;object-fit:contain}
+
+/* Pestañas Rival / Propio (botón conjunto) */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--panel2)}
+.segbtn{background:transparent;color:var(--muted);border:0;padding:7px 16px;cursor:pointer;font:inherit;font-weight:600;transition:background .15s,color .15s}
+.segbtn + .segbtn{border-left:1px solid var(--line)}
+.segbtn:hover{color:var(--text)}
+.segbtn.on{background:var(--accent);color:#fff;box-shadow:0 0 12px rgba(255,93,93,.35)}
+.segbtn[data-v="own"].on{background:#4f8cf0;box-shadow:0 0 12px rgba(79,140,240,.4)}
