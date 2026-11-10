@@ -14,9 +14,11 @@ const KEY = 'rival-team-gen9-v1';   // formato antiguo (solo Gen 9)
 const KEY2 = 'pokemon-teamsheet-v2';   // pestaña Rival
 const KEYS = {rival: KEY2, own: 'pokemon-teamsheet-own-v1'};   // una lista independiente por pestaña
 const PREF = 'rival-team-gen9-prefs';
-let prefs = {lang:'es', random:false, gen:9, view:'rival'};
+let prefs = {lang:'es', random:false, gen:9, view:'rival', side:'rival'};
 try { Object.assign(prefs, JSON.parse(localStorage.getItem(PREF) || '{}')); } catch(e) {}
-if (!KEYS[prefs.view]) prefs.view = 'rival';
+if (!['rival','own','cmp'].includes(prefs.view)) prefs.view = 'rival';
+if (!KEYS[prefs.side]) prefs.side = 'rival';
+if (prefs.view !== 'cmp') prefs.side = prefs.view;   // 'cmp' no tiene datos propios: conserva la última lista editada
 prefs.random = PMRandom.get();   // Randomlocke compartido entre páginas
 const savePrefs = () => { try { localStorage.setItem(PREF, JSON.stringify(prefs)); } catch(e) {} };
 // k: 'a' habilidad, 'm' movimiento, 'i' objeto
@@ -33,7 +35,7 @@ const I18N = {
   es: {resetAll:'Liberar todo', clear:'Liberar', pokemon:'Pokémon', nick:'Mote', ability:'Habilidad', item:'Objeto', nature:'Naturaleza',
        baseStats:'Stats base', moves:'Movimientos', total:'Total', searchPh:'Buscar Pokémon…', itemPh:'Sin objeto', movePh:'Movimiento',
        none:'No existe en esta gen', pickNat:'— Naturaleza —', pickAb:'— Habilidad —', own:'Del Pokémon', allAb:'Todas las habilidades',
-       neutral:'neutra', wipe:'Borrar todos los equipos', confirmWipe:'¿Borrar TODOS los equipos de TODAS las generaciones de la pestaña «%s»? Esta acción no se puede deshacer.', tabRival:'Rival', tabOwn:'Propio', tabTitle:'Equipo del rival o equipo propio', copy:'Copiar', paste:'Pegar', copied:'¡Copiado!', team:'Equipo', illegal:'Este Pokémon no aprende este movimiento en esta gen', noRes:'Sin resultados', confirmReset:'¿Liberar los 6 Pokémon?', genTitle:'Generación', langTitle:'Idioma',
+       neutral:'neutra', wipe:'Borrar todos los equipos', confirmWipe:'¿Borrar TODOS los equipos de TODAS las generaciones de la pestaña «%s»? Esta acción no se puede deshacer.', tabRival:'Rival', tabOwn:'Propio', tabCmp:'Comparar', tabTitle:'Equipo del rival, equipo propio o comparación entre ambos', copy:'Copiar', paste:'Pegar', copied:'¡Copiado!', team:'Equipo', illegal:'Este Pokémon no aprende este movimiento en esta gen', noRes:'Sin resultados', confirmReset:'¿Liberar los 6 Pokémon?', genTitle:'Generación', langTitle:'Idioma',
        rndOn:'Randomlocke: permite elegir cualquier habilidad y cualquier movimiento de cualquier generación', rndOff:'Las habilidades existen a partir de la Gen 3',
        stat0:'PS', stat1:'Ataque', stat2:'Defensa', stat3:'At. Esp.', stat4:'Def. Esp.', stat5:'Velocidad', special:'Especial',
        ab:['Atq','Def','AtE','DfE','Vel'],
@@ -41,7 +43,7 @@ const I18N = {
   en: {resetAll:'Release all', clear:'Release', pokemon:'Pokémon', nick:'Nickname', ability:'Ability', item:'Item', nature:'Nature',
        baseStats:'Base stats', moves:'Moves', total:'Total', searchPh:'Search Pokémon…', itemPh:'No item', movePh:'Move',
        none:'Not available in this gen', pickNat:'— Nature —', pickAb:'— Ability —', own:"Pokémon's own", allAb:'All abilities',
-       neutral:'neutral', wipe:'Delete all teams', confirmWipe:'Delete ALL teams from ALL generations in the «%s» tab? This cannot be undone.', tabRival:'Rival', tabOwn:'Own', tabTitle:'Opponent team or your own team', copy:'Copy', paste:'Paste', copied:'Copied!', team:'Team', illegal:"This Pokémon can't learn this move in this gen", noRes:'No results', confirmReset:'Release all 6 Pokémon?', genTitle:'Generation', langTitle:'Language',
+       neutral:'neutral', wipe:'Delete all teams', confirmWipe:'Delete ALL teams from ALL generations in the «%s» tab? This cannot be undone.', tabRival:'Rival', tabOwn:'Own', tabCmp:'Compare', tabTitle:'Opponent team, your own team or a comparison of both', copy:'Copy', paste:'Paste', copied:'Copied!', team:'Team', illegal:"This Pokémon can't learn this move in this gen", noRes:'No results', confirmReset:'Release all 6 Pokémon?', genTitle:'Generation', langTitle:'Language',
        rndOn:'Randomlocke: allows any ability and any move from any generation', rndOff:'Abilities exist from Gen 3 onwards',
        stat0:'HP', stat1:'Attack', stat2:'Defense', stat3:'Sp. Atk', stat4:'Sp. Def', stat5:'Speed', special:'Special',
        ab:['Atk','Def','SpA','SpD','Spe'],
@@ -69,8 +71,8 @@ try {
   if (!alls.rival[9]) { const old = JSON.parse(localStorage.getItem(KEY) || 'null'); if (Array.isArray(old)) alls.rival[9] = old; }
 } catch(e) { alls.rival = {}; }
 try { alls.own = JSON.parse(localStorage.getItem(KEYS.own) || 'null') || {}; } catch(e) { alls.own = {}; }
-all = alls[prefs.view];
-const normGen = g => {
+all = alls[prefs.side];
+const normOf = (all, g) => {
   let x = all[g];
   if (Array.isArray(x)) x = {a:0, t:[x]};            // formato anterior: un solo equipo
   if (!x || !Array.isArray(x.t)) x = {a:0, t:[]};
@@ -78,8 +80,9 @@ const normGen = g => {
   if (!(x.a >= 0 && x.a < 3)) x.a = 0;
   return all[g] = x;
 };
+const normGen = g => normOf(all, g);
 let state = [];
-const save = () => { const gd = normGen(prefs.gen); gd.a = team; gd.t[team] = state; try { localStorage.setItem(KEYS[prefs.view], JSON.stringify(all)); } catch(e) {} };
+const save = () => { const gd = normGen(prefs.gen); gd.a = team; gd.t[team] = state; try { localStorage.setItem(KEYS[prefs.side], JSON.stringify(all)); } catch(e) {} };
 
 /* ---------- Combobox ---------- */
 // Miniatura para las listas de resultados (sprite de dex, con respaldo al sprite gen5)
@@ -240,7 +243,7 @@ function buildSlot(idx) {
     f('ability', selAb),
     f('item', wrap(inItem)),
     f('nature', selNat));
-  root.append(num, el('div', {class:'top'}, el('div', {}, sprite, types), fields));
+  root.append(num, el('div', {class:'top'}, el('div', {class:'spcol'}, sprite, types), fields));
 
   // stats
   const statsBox = el('div', {class:'stats'});
@@ -357,7 +360,237 @@ function buildSlot(idx) {
 
 setGen(GENS[prefs.gen] ? prefs.gen : 9);
 for (let i = 0; i < 6; i++) slots.push(buildSlot(i));
-const refresh = () => slots.forEach(r => r());
+const cmpBox = el('section', {id:'cmp', class:'cmp'});
+document.getElementById('board').after(cmpBox);
+const refresh = () => {
+  slots.forEach(r => r());
+  const c = prefs.view === 'cmp';
+  document.getElementById('board').hidden = c; cmpBox.hidden = !c;
+  if (c) renderCompare();
+};
+
+/* ---------- Pestaña Comparar ---------- */
+const TYPES = ['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
+const CHART = {   // atacante: [superefectivo, poco eficaz, inmune]
+  Normal:[[],['Rock','Steel'],['Ghost']], Fire:[['Grass','Ice','Bug','Steel'],['Fire','Water','Rock','Dragon'],[]],
+  Water:[['Fire','Ground','Rock'],['Water','Grass','Dragon'],[]], Electric:[['Water','Flying'],['Electric','Grass','Dragon'],['Ground']],
+  Grass:[['Water','Ground','Rock'],['Fire','Grass','Poison','Flying','Bug','Dragon','Steel'],[]], Ice:[['Grass','Ground','Flying','Dragon'],['Fire','Water','Ice','Steel'],[]],
+  Fighting:[['Normal','Ice','Rock','Dark','Steel'],['Poison','Flying','Psychic','Bug','Fairy'],['Ghost']], Poison:[['Grass','Fairy'],['Poison','Ground','Rock','Ghost'],['Steel']],
+  Ground:[['Fire','Electric','Poison','Rock','Steel'],['Grass','Bug'],['Flying']], Flying:[['Grass','Fighting','Bug'],['Electric','Rock','Steel'],[]],
+  Psychic:[['Fighting','Poison'],['Psychic','Steel'],['Dark']], Bug:[['Grass','Psychic','Dark'],['Fire','Fighting','Poison','Flying','Ghost','Steel','Fairy'],[]],
+  Rock:[['Fire','Ice','Flying','Bug'],['Fighting','Ground','Steel'],[]], Ghost:[['Psychic','Ghost'],['Dark'],['Normal']],
+  Dragon:[['Dragon'],['Steel'],['Fairy']], Dark:[['Psychic','Ghost'],['Fighting','Dark','Fairy'],[]],
+  Steel:[['Ice','Rock','Fairy'],['Fire','Water','Electric','Steel'],[]], Fairy:[['Fighting','Dragon','Dark'],['Fire','Poison','Steel'],[]]
+};
+const tmul = (a, d) => {
+  const g = prefs.gen, c = CHART[a]; if (!c) return 1;
+  if (g <= 5 && d === 'Steel' && (a === 'Ghost' || a === 'Dark')) return 0.5;     // el Acero resistía Fantasma y Siniestro
+  if (g === 1) {
+    if (a === 'Ghost' && d === 'Psychic') return 0;
+    if ((a === 'Bug' && d === 'Poison') || (a === 'Poison' && d === 'Bug')) return 2;
+    if (a === 'Ice' && d === 'Fire') return 1;
+  }
+  return c[0].includes(d) ? 2 : c[1].includes(d) ? 0.5 : c[2].includes(d) ? 0 : 1;
+};
+const AB_IMM = {Levitate:'Ground', 'Flash Fire':'Fire', 'Water Absorb':'Water', 'Storm Drain':'Water', 'Dry Skin':'Water', 'Volt Absorb':'Electric', 'Lightning Rod':'Electric', 'Motor Drive':'Electric', 'Sap Sipper':'Grass', 'Earth Eater':'Ground'};
+const CMP = {
+  es: {mode:'Modo', teamOwn:'Propio', teamRival:'Rival', team:'Equipo', empty:'Rellena al menos un Pokémon en cada equipo (pestañas Propio y Rival) para compararlos.',
+       lineup:'Equipos', pick2:'Elige 2 Pokémon de cada equipo pulsando sobre ellos', matrix:'Enfrentamientos', matrixHelp:'Cada casilla: tu mejor ataque contra él (↗) y su mejor ataque contra ti (↘); ⚡ indica quién es más rápido.',
+       you:'Tú', foe:'Rival', faster:'más rápido', tie:'empate de velocidad', speed:'Velocidad', speedHelp:'Velocidad base con la naturaleza elegida (sin EVs, IVs ni nivel).',
+       types:'Tipos', typesHelp:'Cuántos Pokémon de cada equipo son débiles (▲) o resisten/son inmunes (▼) a cada tipo, y cuántos atacantes tiene cada lado de ese tipo (por movimientos o, si no hay, por tipo propio).',
+       type:'Tipo', weakYou:'Débiles tuyos', resYou:'Resisten tuyos', weakFoe:'Débiles rival', resFoe:'Resisten rival', atkYou:'Tus atacantes', atkFoe:'Atacantes rival',
+       summary:'Resumen', threats:'Amenazas para tu equipo', opps:'Oportunidades', gaps:'Te falta cobertura', none:'—', bst:'Total de stats base', se:'Ataques superefectivos', fastest:'Duelos en los que eres más rápido',
+       vsOf:'de', approx:'Sin movimientos ofensivos asignados se usa el tipo del Pokémon (STAB).', ability:'Se tienen en cuenta las habilidades que dan inmunidad (Levitación, Absorbe Agua…).',
+       best2:'Mejores parejas contra la pareja rival', best2Help:'Puntuación orientativa: suma de los 4 duelos (daño por tipos y velocidad) menos penalización por debilidades compartidas.',
+       pair:'Pareja', shared:'Debilidades compartidas', cover:'Cobertura', order:'Orden de velocidad', score:'Puntos', noShared:'ninguna', yourPair:'Tu pareja', foePair:'Pareja rival',
+       m1:'1v1', m2:'2v2', noMove:'sin movimientos', stab:'tipo propio'},
+  en: {mode:'Mode', teamOwn:'Own', teamRival:'Rival', team:'Team', empty:'Fill in at least one Pokémon on each team (Own and Rival tabs) to compare them.',
+       lineup:'Teams', pick2:'Pick 2 Pokémon from each team by clicking them', matrix:'Matchups', matrixHelp:'Each cell: your best attack against it (↗) and its best attack against you (↘); ⚡ marks the faster one.',
+       you:'You', foe:'Foe', faster:'faster', tie:'speed tie', speed:'Speed', speedHelp:'Base Speed with the chosen nature (no EVs, IVs or level).',
+       types:'Types', typesHelp:'How many Pokémon on each team are weak (▲) or resist/are immune (▼) to each type, and how many attackers each side has of that type (by moves, or by own type if none).',
+       type:'Type', weakYou:'Yours weak', resYou:'Yours resist', weakFoe:'Foe weak', resFoe:'Foe resist', atkYou:'Your attackers', atkFoe:'Foe attackers',
+       summary:'Summary', threats:'Threats to your team', opps:'Opportunities', gaps:'Missing coverage', none:'—', bst:'Total base stats', se:'Super-effective attacks', fastest:'Matchups where you are faster',
+       vsOf:'of', approx:'Without offensive moves set, the Pokémon’s own type (STAB) is used.', ability:'Immunity abilities are taken into account (Levitate, Water Absorb…).',
+       best2:'Best pairs against the rival pair', best2Help:'Rough score: sum of the 4 matchups (type damage and speed) minus a penalty for shared weaknesses.',
+       pair:'Pair', shared:'Shared weaknesses', cover:'Coverage', order:'Speed order', score:'Score', noShared:'none', yourPair:'Your pair', foePair:'Rival pair',
+       m1:'1v1', m2:'2v2', noMove:'no moves', stab:'own type'}
+};
+const ct = k => CMP[prefs.lang][k];
+const cmpSel = {own:[], rival:[]};          // pareja elegida en 2v2 (índices de hueco)
+const cmpTeam = {};                          // equipo mostrado por lado (se guarda en cada lista)
+const members = sd => {
+  const gd = normOf(alls[sd], prefs.gen), tm = clean(gd.t[gd.a]), out = [];
+  tm.forEach((s, i) => {
+    const sp = SP[s.sp]; if (!sp) return;
+    const nat = natures.find(n => n[0] === s.nat);
+    const val = (k) => { const v = sp.s[k]; if (!nat || !nat[1] || k === 0) return v; return STAT_KEYS[k] === nat[1] ? Math.floor(v * 1.1) : STAT_KEYS[k] === nat[2] ? Math.floor(v * 0.9) : v; };
+    const dmg = s.mv.map(n => MV[n]).filter(m => m && m[2] !== 'T').map(m => ({n:m[0], t:m[1]}));
+    out.push({i, s, sp, types:sp.t, ab:prefs.gen >= 3 ? s.ab : '', spe:val(5), bst:sp.s.reduce((a, b, k) => a + (prefs.gen === 1 && k === 4 ? 0 : b), 0),
+              opts:dmg.length ? dmg : sp.t.map(t => ({n:null, t})), stab:!dmg.length, atk:val(1), spa:val(3)});
+  });
+  return out;
+};
+const hitMul = (att, m) => {
+  let x = 1; m.types.forEach(d => { x *= tmul(att, d); });
+  if (m.ab && AB_IMM[m.ab] === att) x = 0;
+  if (m.ab === 'Thick Fat' && (att === 'Fire' || att === 'Ice')) x *= 0.5;
+  return x;
+};
+const bestHit = (a, d) => { let b = {mult:-1}; a.opts.forEach(o => { const x = hitMul(o.t, d); if (x > b.mult) b = {mult:x, n:o.n, t:o.t, stab:a.stab}; }); return b; };
+const lg = x => Math.log2(x || 0.125);
+const fmtMul = x => x === 0 ? '0' : x === 0.25 ? '¼' : x === 0.5 ? '½' : String(x);
+const net = (a, b) => { const me = bestHit(a, b), th = bestHit(b, a); return lg(me.mult) - lg(th.mult) + (a.spe > b.spe ? 0.5 : a.spe < b.spe ? -0.5 : 0); };
+const mulCls = x => x === 0 ? 'm0' : x >= 4 ? 'm4' : x >= 2 ? 'm2' : x < 1 ? 'mh' : 'm1';
+const bigThumb = id => { const i = thumb(id); i.classList.add('big'); return i; };
+
+function renderCompare() {
+  const g = prefs.gen, box = cmpBox;
+  box.replaceChildren();
+  // selector de modo 1v1 / 2v2 y de equipo activo de cada lado
+  const mode = prefs.cmpMode === '2' ? '2' : '1';
+  const bar = el('div', {class:'cmpbar'});
+  const seg = el('div', {class:'seg'});
+  [['1','m1'], ['2','m2']].forEach(([v, k]) => {
+    const b = el('button', {type:'button', class:'segbtn' + (mode === v ? ' on neutral' : ''), text:ct(k)});
+    b.onclick = () => { prefs.cmpMode = v; savePrefs(); renderCompare(); };
+    seg.append(b);
+  });
+  bar.append(el('span', {class:'lbl', text:ct('mode')}), seg);
+  [['own','teamOwn'], ['rival','teamRival']].forEach(([sd, k]) => {
+    const gd = normOf(alls[sd], g), grp = el('div', {class:'teams'});
+    [0,1,2].forEach(i => {
+      const b = el('button', {type:'button', class:'teambtn' + (gd.a === i ? ' on' : ''), text:String(i + 1)});
+      b.onclick = () => {
+        if (gd.a === i) return;
+        gd.a = i; cmpSel[sd] = [];
+        if (sd === prefs.side) { team = i; state = clean(gd.t[i]); }      // mantiene sincronizada la lista que se edita en su pestaña
+        try { localStorage.setItem(KEYS[sd], JSON.stringify(alls[sd])); } catch(e) {}
+        renderCompare();
+      };
+      grp.append(b);
+    });
+    bar.append(el('span', {class:'lbl ' + sd, text:ct(k) + ' · ' + ct('team')}), grp);
+  });
+  box.append(bar);
+
+  const A = members('own'), B = members('rival');
+  if (!A.length || !B.length) { box.append(el('p', {class:'cmpempty', text:ct('empty')})); return; }
+  const card = (m, sd) => {
+    const c = el('div', {class:'mini ' + sd});
+    c.append(bigThumb(m.sp.i), el('b', {text:m.s.nick || m.sp.n}), el('div', {class:'types'}, ...m.sp.t.map(typeChip)), el('small', {text:`${t('stat5')} ${m.spe}`}));
+    return c;
+  };
+  const sect = (title, help) => { const s2 = el('section', {class:'panel'}, el('h2', {text:title})); if (help) s2.append(el('p', {class:'help', text:help})); box.append(s2); return s2; };
+
+  /* ---- Equipos / selección ---- */
+  const L = sect(ct('lineup'), mode === '2' ? ct('pick2') : '');
+  let selA = A, selB = B;
+  if (mode === '2') {
+    ['own','rival'].forEach(sd => {
+      const list = sd === 'own' ? A : B;
+      cmpSel[sd] = cmpSel[sd].filter(i => list.some(m => m.i === i));
+      if (cmpSel[sd].length < 2) list.forEach(m => { if (cmpSel[sd].length < 2 && !cmpSel[sd].includes(m.i)) cmpSel[sd].push(m.i); });
+      cmpSel[sd] = cmpSel[sd].slice(-2);
+    });
+    selA = A.filter(m => cmpSel.own.includes(m.i)); selB = B.filter(m => cmpSel.rival.includes(m.i));
+  }
+  const row = (list, sd) => {
+    const r = el('div', {class:'lineup ' + sd});
+    list.forEach(m => {
+      const c = card(m, sd);
+      if (mode === '2') {
+        c.classList.add('pickable'); c.classList.toggle('sel', cmpSel[sd].includes(m.i));
+        c.onclick = () => { const s3 = cmpSel[sd], k = s3.indexOf(m.i); if (k >= 0) { if (s3.length > 1) s3.splice(k, 1); } else { s3.push(m.i); if (s3.length > 2) s3.shift(); } renderCompare(); };
+      }
+      r.append(c);
+    });
+    return r;
+  };
+  L.append(el('div', {class:'twocol'}, el('div', {}, el('h3', {class:'own', text:ct('teamOwn')}), row(A, 'own')), el('div', {}, el('h3', {class:'rival', text:ct('teamRival')}), row(B, 'rival'))));
+
+  /* ---- Matriz de enfrentamientos ---- */
+  const cell = (a, b) => {
+    const me = bestHit(a, b), th = bestHit(b, a), n = net(a, b);
+    const c = el('td', {class:'cell ' + (n >= 1 ? 'good' : n <= -1 ? 'bad' : 'even')});
+    const line = (cls, sym, x, h) => { const d = el('div', {class:'ln ' + cls}, el('span', {text:sym}), el('em', {class:'mvn', text:x.n ? tr('m', x.n) : (x.t ? trType(x.t) + ' (STAB)' : '')}), el('b', {class:mulCls(x.mult), text:'×' + fmtMul(x.mult)})); d.title = (x.n ? tr('m', x.n) : ct('stab')) + (x.t ? ' · ' + trType(x.t) : '') + (h ? '' : ''); return d; };
+    c.append(line('me', '↗', me), line('th', '↘', th));
+    const f = a.spe > b.spe ? ct('you') : a.spe < b.spe ? ct('foe') : '=';
+    c.append(el('div', {class:'spd ' + (a.spe > b.spe ? 'you' : a.spe < b.spe ? 'foe' : 'tie'), text:'⚡ ' + f, title:a.spe === b.spe ? ct('tie') : f + ' ' + ct('faster')}));
+    return c;
+  };
+  const M = sect(ct('matrix'), ct('matrixHelp') + ' ' + ct('approx') + ' ' + ct('ability'));
+  const tbl = el('table', {class:'mx'});
+  const head = el('tr', {}, el('th'));
+  selB.forEach(b => { const th = el('th', {class:'rival'}); th.append(bigThumb(b.sp.i), el('div', {text:b.s.nick || b.sp.n})); head.append(th); });
+  tbl.append(head);
+  selA.forEach(a => { const tr_ = el('tr'); const th = el('th', {class:'own'}); th.append(bigThumb(a.sp.i), el('div', {text:a.s.nick || a.sp.n})); tr_.append(th); selB.forEach(b => tr_.append(cell(a, b))); tbl.append(tr_); });
+  M.append(el('div', {class:'scroll'}, tbl));
+
+  /* ---- Velocidad ---- */
+  const S = sect(ct('speed'), ct('speedHelp'));
+  const all12 = [...selA.map(m => ({m, sd:'own'})), ...selB.map(m => ({m, sd:'rival'}))].sort((x, y) => y.m.spe - x.m.spe);
+  const mx = Math.max(...all12.map(x => x.m.spe), 1);
+  const sl = el('div', {class:'spdlist'});
+  all12.forEach(({m, sd}) => {
+    const r = el('div', {class:'sprow ' + sd}, bigThumb(m.sp.i), el('span', {class:'nm', text:m.s.nick || m.sp.n}), el('div', {class:'sbar'}, Object.assign(el('i'), {style:`width:${m.spe / mx * 100}%`})), el('b', {text:m.spe}));
+    sl.append(r);
+  });
+  S.append(sl);
+
+  /* ---- Tipos ---- */
+  const cnt = (list, ty, dir) => list.filter(m => dir > 0 ? hitMul(ty, m) > 1 : hitMul(ty, m) < 1).length;
+  const atk = (list, ty) => list.filter(m => m.opts.some(o => o.t === ty)).length;
+  const rows = TYPES.filter(ty => g >= 6 || ty !== 'Fairy').filter(ty => g >= 2 || (ty !== 'Dark' && ty !== 'Steel')).map(ty => ({ty, wy:cnt(selA, ty, 1), ry:cnt(selA, ty, -1), wf:cnt(selB, ty, 1), rf:cnt(selB, ty, -1), ay:atk(selA, ty), af:atk(selB, ty)}));
+  const threats = rows.filter(r => r.wy >= (selA.length > 2 ? 2 : 1) && r.af > 0 && r.wy > r.ry), opps = rows.filter(r => r.wf >= (selB.length > 2 ? 2 : 1) && r.ay > 0 && r.wf > r.rf), gaps = rows.filter(r => r.wf >= (selB.length > 2 ? 2 : 1) && r.ay === 0);
+  const chips = (list, f) => list.length ? el('div', {class:'chips'}, ...list.map(r => { const c = typeChip(r.ty); c.title = f(r); c.append(' ' + f(r)); return c; })) : el('span', {class:'muted', text:ct('none')});
+  const Y = sect(ct('summary'));
+  const g3 = el('div', {class:'cards'});
+  const pairs = selA.length * selB.length;
+  let seY = 0, seF = 0, fast = 0;
+  selA.forEach(a => selB.forEach(b => { if (bestHit(a, b).mult >= 2) seY++; if (bestHit(b, a).mult >= 2) seF++; if (a.spe > b.spe) fast++; }));
+  const stat = (k, v1, v2) => el('div', {class:'sc'}, el('small', {text:ct(k)}), el('div', {class:'pair'}, el('b', {class:'own', text:v1}), el('span', {text:'vs'}), el('b', {class:'rival', text:v2})));
+  g3.append(stat('bst', selA.reduce((a, m) => a + m.bst, 0), selB.reduce((a, m) => a + m.bst, 0)),
+            stat('se', `${seY}/${pairs}`, `${seF}/${pairs}`),
+            stat('fastest', `${fast}/${pairs}`, `${selA.reduce((n, a) => n + selB.filter(b => b.spe > a.spe).length, 0)}/${pairs}`));
+  Y.append(g3,
+    el('div', {class:'trio'}, el('div', {}, el('h4', {text:ct('threats')}), chips(threats, r => `▲${r.wy}`)), el('div', {}, el('h4', {text:ct('opps')}), chips(opps, r => `▲${r.wf}`)), el('div', {}, el('h4', {text:ct('gaps')}), chips(gaps, r => `▲${r.wf}`))));
+
+  const T = sect(ct('types'), ct('typesHelp'));
+  const tt = el('table', {class:'tt'}, el('tr', {}, ...['type','weakYou','resYou','weakFoe','resFoe','atkYou','atkFoe'].map(k => el('th', {text:ct(k)}))));
+  rows.forEach(r => {
+    const tr_ = el('tr', {class:threats.includes(r) ? 'danger' : opps.includes(r) ? 'opp' : gaps.includes(r) ? 'gap' : ''});
+    tr_.append(el('td', {}, typeChip(r.ty)));
+    [r.wy, r.ry, r.wf, r.rf, r.ay, r.af].forEach((v, i) => tr_.append(el('td', {class:v ? (i === 0 || i === 2 ? 'w' : i === 1 || i === 3 ? 'r' : 'a') : 'z', text:v || '·'})));
+    tt.append(tr_);
+  });
+  T.append(el('div', {class:'scroll'}, tt));
+
+  /* ---- 2v2: mejores parejas ---- */
+  if (mode === '2' && selA.length === 2 && selB.length === 2) {
+    const sharedW = pair => rows.filter(r => pair.every(m => hitMul(r.ty, m) > 1));
+    const P = sect(ct('foePair') + ' / ' + ct('yourPair'));
+    const info = (pair, other, label, cls) => {
+      const sw = sharedW(pair);
+      return el('div', {class:'pairinfo ' + cls}, el('h4', {text:label}),
+        el('div', {}, el('small', {text:ct('shared') + ': '}), sw.length ? el('span', {class:'chips'}, ...sw.map(r => typeChip(r.ty))) : el('span', {class:'muted', text:ct('noShared')})),
+        el('div', {}, el('small', {text:ct('cover') + ': '}), el('span', {class:'chips'}, ...[...new Set(pair.flatMap(m => m.opts.map(o => o.t)))].map(typeChip))));
+    };
+    P.append(el('div', {class:'twocol'}, info(selA, selB, ct('yourPair'), 'own'), info(selB, selA, ct('foePair'), 'rival')));
+    const B2 = sect(ct('best2'), ct('best2Help'));
+    const combos = []; for (let x = 0; x < A.length; x++) for (let y = x + 1; y < A.length; y++) combos.push([A[x], A[y]]);
+    const scored = combos.map(p => {
+      let sc = 0; p.forEach(a => selB.forEach(b => { sc += net(a, b); }));
+      const sw = sharedW(p).filter(r => selB.some(b => b.opts.some(o => o.t === r.ty)));
+      return {p, sc:sc - sw.length, sw};
+    }).sort((x, y) => y.sc - x.sc).slice(0, 5);
+    const bl = el('div', {class:'best'});
+    scored.forEach((x, k) => {
+      const r = el('div', {class:'brow'}, el('b', {class:'rk', text:'#' + (k + 1)}), ...x.p.map(m => el('span', {class:'bm'}, bigThumb(m.sp.i), el('span', {text:m.s.nick || m.sp.n}))), el('span', {class:'sc2', text:`${ct('score')} ${x.sc.toFixed(1)}`}));
+      bl.append(r);
+    });
+    B2.append(bl);
+  }
+}
 
 const genSel = document.getElementById('gen'), foot = document.getElementById('foot'), teamsBox = document.getElementById('teams');
 const teamBtns = [0,1,2].map(i => {
@@ -367,12 +600,14 @@ const teamBtns = [0,1,2].map(i => {
   return b;
 });
 const sideBox = document.getElementById('side');
-const sideBtns = ['rival','own'].map(v => {
+const sideBtns = ['rival','own','cmp'].map(v => {
   const b = el('button', {type:'button', class:'segbtn', role:'tab'});
   b.dataset.v = v;
   b.onclick = () => {
     if (prefs.view === v) return;
-    save(); prefs.view = v; all = alls[v]; setGen(prefs.gen); savePrefs(); syncPrefs(); refresh();
+    save(); prefs.view = v;
+    if (v !== 'cmp') { prefs.side = v; all = alls[v]; setGen(prefs.gen); }
+    savePrefs(); syncPrefs(); refresh();
   };
   sideBox.append(b);
   return b;
@@ -382,7 +617,7 @@ const langSel = document.getElementById('lang'), rndBtn = document.getElementByI
 const syncPrefs = () => {
   genSel.value = prefs.gen;
   teamBtns.forEach((b,i) => { b.classList.toggle('on', i === team); b.setAttribute('aria-pressed', i === team); b.title = `${t('team')} ${i+1}`; });
-  sideBtns.forEach(b => { const on = b.dataset.v === prefs.view; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); b.textContent = t(b.dataset.v === 'own' ? 'tabOwn' : 'tabRival'); });
+  sideBtns.forEach(b => { const on = b.dataset.v === prefs.view; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); b.textContent = t({rival:'tabRival', own:'tabOwn', cmp:'tabCmp'}[b.dataset.v]); });
   sideBox.title = t('tabTitle'); sideBox.dataset.view = prefs.view; document.body.dataset.view = prefs.view;
   langSel.value = prefs.lang;
   rndBtn.classList.toggle('on', prefs.random);
@@ -407,9 +642,9 @@ updatePaste();
 refresh();
 
 document.getElementById('wipe').onclick = () => {
-  if (!confirm(t('confirmWipe').replace('%s', t(prefs.view === 'own' ? 'tabOwn' : 'tabRival')))) return;
-  all = alls[prefs.view] = {}; team = 0;
-  try { localStorage.removeItem(KEYS[prefs.view]); if (prefs.view === 'rival') localStorage.removeItem(KEY); } catch(e) {}
+  if (!confirm(t('confirmWipe').replace('%s', t(prefs.side === 'own' ? 'tabOwn' : 'tabRival')))) return;
+  all = alls[prefs.side] = {}; team = 0;
+  try { localStorage.removeItem(KEYS[prefs.side]); if (prefs.side === 'rival') localStorage.removeItem(KEY); } catch(e) {}
   state = clean(); save(); syncPrefs(); refresh();
 };
 document.getElementById('resetAll').onclick = () => {
