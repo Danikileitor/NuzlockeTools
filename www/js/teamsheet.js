@@ -403,7 +403,7 @@ const CMP = {
        vsOf:'de', approx:'Sin movimientos ofensivos asignados se usa el tipo del Pokémon (STAB).', ability:'Se tienen en cuenta las habilidades que dan inmunidad (Levitación, Absorbe Agua…).',
        best2:'Mejores parejas contra la pareja rival', best2Help:'Puntuación orientativa: suma de los 4 duelos (daño por tipos y velocidad) menos penalización por debilidades compartidas.',
        pair:'Pareja', shared:'Debilidades compartidas', cover:'Cobertura', order:'Orden de velocidad', score:'Puntos', noShared:'ninguna', yourPair:'Tu pareja', foePair:'Pareja rival',
-       m1:'1v1', m2:'2v2', noMove:'sin movimientos', stab:'tipo propio'},
+       m1:'1v1', m2:'2v2', noMove:'sin movimientos', stab:'tipo propio', openCalc:'Abrir en la calculadora de daño', noEffect:'sin efecto', dmgNote:'El daño es % de los PS del defensor, calculado con el motor de Smogon a nivel 50, 31 IV y 0 EV (en los movimientos asignados); pasa el ratón para ver el detalle. Pulsa una celda para abrirla en la calculadora.'},
   en: {mode:'Mode', teamOwn:'Own', teamRival:'Rival', team:'Team', empty:'Fill in at least one Pokémon on each team (Own and Rival tabs) to compare them.',
        lineup:'Teams', pick2:'Pick 2 Pokémon from each team by clicking them', matrix:'Matchups', matrixHelp:'Each cell: your best attack against it (↗) and its best attack against you (↘); ⚡ marks the faster one.',
        you:'You', foe:'Foe', faster:'faster', tie:'speed tie', speed:'Speed', speedHelp:'Base Speed with the chosen nature (no EVs, IVs or level).',
@@ -413,7 +413,7 @@ const CMP = {
        vsOf:'of', approx:'Without offensive moves set, the Pokémon’s own type (STAB) is used.', ability:'Immunity abilities are taken into account (Levitate, Water Absorb…).',
        best2:'Best pairs against the rival pair', best2Help:'Rough score: sum of the 4 matchups (type damage and speed) minus a penalty for shared weaknesses.',
        pair:'Pair', shared:'Shared weaknesses', cover:'Coverage', order:'Speed order', score:'Score', noShared:'none', yourPair:'Your pair', foePair:'Rival pair',
-       m1:'1v1', m2:'2v2', noMove:'no moves', stab:'own type'}
+       m1:'1v1', m2:'2v2', noMove:'no moves', stab:'own type', openCalc:'Open in the damage calculator', noEffect:'no effect', dmgNote:'Damage is % of the defender’s HP, computed with the Smogon engine at level 50, 31 IVs and 0 EVs (for assigned moves); hover for details. Click a cell to open it in the calculator.'}
 };
 const ct = k => CMP[prefs.lang][k];
 const cmpSel = {own:[], rival:[]};          // pareja elegida en 2v2 (índices de hueco)
@@ -424,8 +424,8 @@ const members = sd => {
     const sp = SP[s.sp]; if (!sp) return;
     const nat = natures.find(n => n[0] === s.nat);
     const val = (k) => { const v = sp.s[k]; if (!nat || !nat[1] || k === 0) return v; return STAT_KEYS[k] === nat[1] ? Math.floor(v * 1.1) : STAT_KEYS[k] === nat[2] ? Math.floor(v * 0.9) : v; };
-    const dmg = s.mv.map(n => MV[n]).filter(m => m && m[2] !== 'T').map(m => ({n:m[0], t:m[1]}));
-    out.push({i, s, sp, types:sp.t, ab:prefs.gen >= 3 ? s.ab : '', spe:val(5), bst:sp.s.reduce((a, b, k) => a + (prefs.gen === 1 && k === 4 ? 0 : b), 0),
+    const dmg = s.mv.map(n => MV[n]).filter(m => m && m[2] !== 'T').map(m => ({n:m[0], t:m[1], m}));
+    out.push({i, s, sp, natO:nat, types:sp.t, ab:prefs.gen >= 3 ? s.ab : '', spe:val(5), bst:sp.s.reduce((a, b, k) => a + (prefs.gen === 1 && k === 4 ? 0 : b), 0),
               opts:dmg.length ? dmg : sp.t.map(t => ({n:null, t})), stab:!dmg.length, atk:val(1), spa:val(3)});
   });
   return out;
@@ -436,7 +436,36 @@ const hitMul = (att, m) => {
   if (m.ab === 'Thick Fat' && (att === 'Fire' || att === 'Ice')) x *= 0.5;
   return x;
 };
-const bestHit = (a, d) => { let b = {mult:-1}; a.opts.forEach(o => { const x = hitMul(o.t, d); if (x > b.mult) b = {mult:x, n:o.n, t:o.t, stab:a.stab}; }); return b; };
+/* Daño real con el motor de Smogon (nivel 50, 31 IV, 0 EV; en Gen 1-2 15 DV y exp. máxima). Devuelve null si no se puede calcular. */
+const monM = m => {
+  const g = prefs.gen, old = g <= 2, iv = Array(6).fill(old ? 15 : 31), ev = Array(6).fill(old ? 65535 : 0);
+  if (old) iv[0] = CalcEngine.hpDV(iv);
+  const stats = CalcEngine.calcStats(g, m.sp.s, {lvl:50, iv, ev, nat:g >= 3 && m.natO ? m.natO : null});
+  return {sp:m.sp, stats, lvl:50, stages:[0,0,0,0,0], gender:'', tera:'', nat:g >= 3 ? m.s.nat : '', ab:g >= 3 ? m.s.ab : '', abOn:false, item:g >= 2 ? m.s.item : '', status:'', hpPct:100, dmax:false,
+          iv:old ? null : iv, ev:old ? null : ev, reflect:false, lscreen:false, fx:{}, alliesFainted:0, hitsTaken:0, boostedStat:'', evo:!!(typeof EVO_PRE !== 'undefined' && m.sp.num && EVO_PRE[m.sp.num])};
+};
+const dmgOf = (a, d, o) => {
+  if (!o.m || typeof CalcBridge === 'undefined') return null;
+  try {
+    const r = CalcBridge.calc(prefs.gen, monM(a), monM(d), {n:o.n, type:o.m[1], cat:o.m[2], bp:o.m[3], bpUser:false, hits:'', crit:false, z:false, stellar:true}, {});
+    if (!r) return null;
+    const mn = r.rolls[0], mx = r.rolls[r.rolls.length - 1], hp = r.hp;
+    return {mn, mx, hp, pmin:Math.round(mn * 1000 / hp) / 10, pmax:Math.round(mx * 1000 / hp) / 10, desc:r.full || r.desc || ''};
+  } catch (e) { return null; }
+};
+const hitCache = new Map();   // se vacía en cada renderCompare
+const bestHit = (a, d) => {
+  const key = a.i + '|' + a.sp.n + '|' + a.s.mv.join() + '>' + d.i + '|' + d.sp.n, hit = hitCache.get(key); if (hit) return hit;
+  let b = {mult:-1, dmg:null, score:-1};
+  a.opts.forEach(o => {
+    const dm = a.stab ? null : dmgOf(a, d, o);
+    let x = hitMul(o.t, d); if (dm && dm.mx <= 0) x = 0;
+    const sc = dm ? dm.mx : -1;
+    if (dm ? (sc > b.score || (sc === b.score && x > b.mult)) : (b.score < 0 && x > b.mult)) b = {mult:x, n:o.n, t:o.t, stab:a.stab, dmg:dm, score:sc};
+  });
+  hitCache.set(key, b);
+  return b;
+};
 const lg = x => Math.log2(x || 0.125);
 const fmtMul = x => x === 0 ? '0' : x === 0.25 ? '¼' : x === 0.5 ? '½' : String(x);
 const net = (a, b) => { const me = bestHit(a, b), th = bestHit(b, a); return lg(me.mult) - lg(th.mult) + (a.spe > b.spe ? 0.5 : a.spe < b.spe ? -0.5 : 0); };
@@ -444,6 +473,7 @@ const mulCls = x => x === 0 ? 'm0' : x >= 4 ? 'm4' : x >= 2 ? 'm2' : x < 1 ? 'mh
 const bigThumb = id => { const i = thumb(id); i.classList.add('big'); return i; };
 
 function renderCompare() {
+  hitCache.clear();
   const g = prefs.gen, box = cmpBox;
   box.replaceChildren();
   // selector de modo 1v1 / 2v2 y de equipo activo de cada lado
@@ -509,16 +539,34 @@ function renderCompare() {
   L.append(el('div', {class:'twocol'}, el('div', {}, el('h3', {class:'own', text:ct('teamOwn')}), row(A, 'own')), el('div', {}, el('h3', {class:'rival', text:ct('teamRival')}), row(B, 'rival'))));
 
   /* ---- Matriz de enfrentamientos ---- */
+  const koTxt = dm => { const n1 = Math.ceil(dm.hp / Math.max(1, dm.mn)), n2 = Math.ceil(dm.hp / Math.max(1, dm.mx)); return n1 > 4 ? (n2 > 4 ? '5+HKO' : n2 + '-5+HKO') : n1 === n2 ? n1 + 'HKO' : n2 + '-' + n1 + 'HKO'; };
+  const toCalc = (a, b) => {   // abre la calculadora de daño con este enfrentamiento (tú = Pokémon 1, rival = Pokémon 2)
+    const g = prefs.gen, old = g <= 2;
+    const side = m => ({sp:m.sp.n, lvl:50, nat:g >= 3 ? m.s.nat : '', ab:g >= 3 ? m.s.ab : '', abOn:false, item:g >= 2 ? m.s.item : '', status:'', hpPct:100, gender:'', tera:'', teraOn:false, dmax:false,
+      iv:Array(6).fill(old ? 15 : 31), ev:Array(6).fill(old ? 65535 : 0), stages:[0,0,0,0,0], reflect:false, lscreen:false, fx:{}, alliesFainted:0, hitsTaken:0, preset:null, boostedStat:'',
+      mv:[0,1,2,3].map(j => ({n:m.s.mv[j] || '', bp:'', hits:'', crit:false, z:false, stellar:true}))});
+    try { localStorage.setItem('dmgcalc-v1', JSON.stringify({gen:g, random:prefs.random, weather:'', terrain:'', fx:{}, sides:[side(a), side(b)]})); } catch (e) {}
+    location.href = 'damage-calculator.html';
+  };
   const cell = (a, b) => {
     const me = bestHit(a, b), th = bestHit(b, a), n = net(a, b);
-    const c = el('td', {class:'cell ' + (n >= 1 ? 'good' : n <= -1 ? 'bad' : 'even')});
-    const line = (cls, sym, x, h) => { const d = el('div', {class:'ln ' + cls}, el('span', {text:sym}), el('em', {class:'mvn', text:x.n ? tr('m', x.n) : (x.t ? trType(x.t) + ' (STAB)' : '')}), el('b', {class:mulCls(x.mult), text:'×' + fmtMul(x.mult)})); d.title = (x.n ? tr('m', x.n) : ct('stab')) + (x.t ? ' · ' + trType(x.t) : '') + (h ? '' : ''); return d; };
+    const c = el('td', {class:'cell link ' + (n >= 1 ? 'good' : n <= -1 ? 'bad' : 'even'), tabindex:'0', role:'link', title:ct('openCalc')});
+    c.onclick = () => toCalc(a, b);
+    c.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toCalc(a, b); } };
+    const line = (cls, sym, x) => {
+      const d = el('div', {class:'ln ' + cls}, el('span', {text:sym}), el('em', {class:'mvn', text:x.n ? tr('m', x.n) : (x.t ? trType(x.t) + ' (STAB)' : '')}), el('b', {class:mulCls(x.mult), text:'×' + fmtMul(x.mult)}));
+      const w = el('div', {class:'lnw'}, d);
+      if (x.dmg && x.dmg.mx > 0) { const q = el('div', {class:'dm'}, el('span', {text:`${x.dmg.pmin}–${x.dmg.pmax}%`}), el('small', {text:koTxt(x.dmg)})); w.append(q); w.title = x.dmg.desc; }
+      else if (x.dmg) w.append(el('div', {class:'dm'}, el('span', {text:ct('noEffect')})));
+      else if (!w.title) w.title = x.n ? tr('m', x.n) : ct('stab');
+      return w;
+    };
     c.append(line('me', '↗', me), line('th', '↘', th));
     const f = a.spe > b.spe ? ct('you') : a.spe < b.spe ? ct('foe') : '=';
     c.append(el('div', {class:'spd ' + (a.spe > b.spe ? 'you' : a.spe < b.spe ? 'foe' : 'tie'), text:'⚡ ' + f, title:a.spe === b.spe ? ct('tie') : f + ' ' + ct('faster')}));
     return c;
   };
-  const M = sect(ct('matrix'), ct('matrixHelp') + ' ' + ct('approx') + ' ' + ct('ability'));
+  const M = sect(ct('matrix'), ct('matrixHelp') + ' ' + ct('dmgNote') + ' ' + ct('approx') + ' ' + ct('ability'));
   const tbl = el('table', {class:'mx'});
   const head = el('tr', {}, el('th'));
   selB.forEach(b => { const th = el('th', {class:'rival'}); th.append(bigThumb(b.sp.i), el('div', {text:b.s.nick || b.sp.n})); head.append(th); });
